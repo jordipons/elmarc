@@ -1,28 +1,59 @@
 import numpy as np
 from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score
 import tensorflow as tf
 import librosa
 import pickle
 import time
 import os
+from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import classification_report
+from sklearn.cross_validation import PredefinedSplit
 
 config = {
-    'model_name': '3x3_random',
+    'experiment_name': 'dev_num_features',
     'pre_processing': {
         'n_mels': 96,  # number of mel bands of the input time-freq representation
         'n_frames': 1360  # number of time-frames of hte input time-freq representation
     },
-    'load_extracted_features': False, # load already extracted features by defining the
+    'features_type': 'noCNN',
+    'selected_features_list': [0, 1, 2, 3, 4],
+    'load_extracted_features': '/mnt/vmdata/users/jpons/elmarc/data/GTZAN/features/bn_input_3x3_random_1360_961513096217.pkl',
+    # load already extracted features by defining the
     # path where these are saved - set as False for extracting those again
-    'audio_path': '../data/GTZAN/audio',
-    'train_set_list': '../data/GTZAN/idx/train_dev.txt',
-    'val_set_list': '../data/GTZAN/idx/val_dev.txt',
-    'test_set_list': '../data/GTZAN/idx/test_dev.txt',
-    'save_extracted_features_folder': '../data/GTZAN/features/'
+    'audio_path': '/homedtic/jpons/GTZAN/',
+    'train_set_list': '/homedtic/jpons/GTZAN_partitions/train_filtered.txt',
+    'val_set_list': '/homedtic/jpons/GTZAN_partitions/valid_filtered.txt',
+    'test_set_list': '/homedtic/jpons/GTZAN_partitions/test_filtered.txt',
+    'save_extracted_features_folder': '../data/GTZAN/features/',
+    'partition': 'random'
 }
 
+# svm_params = [
+#     {'kernel': ['rbf', 'poly', 'sigmoid'],
+#      'gamma': [1 / (2 ** 3), 1 / (2 ** 5), 1 / (2 ** 7), 1 / (2 ** 9), 1 / (2 ** 11), 'auto'],
+#      'C': [0.1, 2, 8, 32, 100, 1000, 10000, 100000]},
+#
+#     {'kernel': ['linear'],
+#      'C': [0.1, 2, 8, 32, 100, 1000, 10000, 100000]}
+# ]
 
-def extract_cnn_features(audio, sampling_rate=16000):
+svm_params = [
+    {'kernel': ['rbf'],
+     'gamma': [1 / (2 ** 3), 1 / (2 ** 5), 1 / (2 ** 7), 1 / (2 ** 9), 1 / (2 ** 11), 'auto'],
+     'C': [0.1, 2, 8, 32, 100, 1000, 10000, 100000]}
+]
+
+
+def select_cnn_feature_layers(feature_maps, selected_features_list):
+    selected_features = []
+    for i in range(len(feature_maps)):
+        for j in selected_features_list:
+            selected_features.append(np.squeeze(feature_maps[i][j]))
+    return selected_features
+
+
+def extract_features(audio, feature_type, sampling_rate=16000):
     """
     Extract tensor-flow features: extract audio, compute librosa features and
     pass it through the tensor-flow model to extract the *features_list*
@@ -32,30 +63,52 @@ def extract_cnn_features(audio, sampling_rate=16000):
 
     :return features: Extracted features per *audio* song
     """
-    # compute spectrogram
-    audio, sr = librosa.load(audio, sr=sampling_rate)
-    audio_rep = librosa.feature.melspectrogram(y=audio,
-                                               sr=sampling_rate,
-                                               hop_length=256,
-                                               n_fft=512,
-                                               n_mels=config['pre_processing']['n_mels']).T
+    if feature_type == 'MFCC':
+        audio, sr = librosa.load(audio, sr=sampling_rate)
 
-    # normalize audio representation
-    audio_rep = np.log10(10000 * audio_rep + 1)
-    # audio_rep = (audio_rep - config['patches_params']['mean']) / config['patches_params']['std']
-    audio_rep = np.expand_dims(audio_rep, axis=0)
-    audio_rep = audio_rep[:, :config['pre_processing']['n_frames'], :]
+        mfcc = librosa.feature.mfcc(y=audio, sr=sampling_rate, n_mfcc=20)
+        mfcc_mean = np.mean(mfcc, axis=1)
+        mfcc_std = np.std(mfcc, axis=1)
 
-    # extract features
-    feature_maps = sess.run(features_definition, feed_dict={x: audio_rep, is_train: False})
-    features = []
-    for i in range(len(feature_maps)):
-        for j in range(feature_maps[1].shape[3]):
-            features.append(np.mean(np.squeeze(feature_maps[i][:, :, :, j])))
+        mfcc_delta = librosa.feature.delta(mfcc)
+        mfcc_delta_mean = np.mean(mfcc_delta, axis=1)
+        mfcc_delta_std = np.std(mfcc_delta, axis=1)
+
+        mfcc_delta2 = librosa.feature.delta(mfcc, order=2)
+        mfcc_delta2_mean = np.mean(mfcc_delta2, axis=1)
+        mfcc_delta2_std = np.std(mfcc_delta2, axis=1)
+
+        return np.concatenate((mfcc_mean, mfcc_std,
+                               mfcc_delta_mean, mfcc_delta_std,
+                               mfcc_delta2_mean, mfcc_delta2_std), axis=0)
+
+    elif feature_type == 'CNN':
+        # compute spectrogram
+        audio, sr = librosa.load(audio, sr=sampling_rate)
+        audio_rep = librosa.feature.melspectrogram(y=audio,
+                                                   sr=sampling_rate,
+                                                   hop_length=256,
+                                                   n_fft=512,
+                                                   n_mels=config['pre_processing']['n_mels']).T
+
+        # normalize audio representation
+        audio_rep = np.log10(10000 * audio_rep + 1)
+        # audio_rep = (audio_rep - config['patches_params']['mean']) / config['patches_params']['std']
+        audio_rep = np.expand_dims(audio_rep, axis=0)
+        audio_rep = audio_rep[:, :config['pre_processing']['n_frames'], :]
+
+        # extract features
+        feature_maps = sess.run(features_definition, feed_dict={x: audio_rep, is_train: False})
+        features = []
+        for i in range(len(feature_maps)):
+            tmp_features = []
+            for j in range(feature_maps[i].shape[3]):
+                tmp_features.append(np.mean(np.squeeze(feature_maps[i][:, :, :, j])))
+            features.append(tmp_features)
     return features
 
 
-def format_data_gtzan(prefix, list_audios):
+def format_data_gtzan(prefix, list_audios, features_type):
     """
     Extract features and attach its label to every song
 
@@ -65,40 +118,52 @@ def format_data_gtzan(prefix, list_audios):
     :return X: Extracted features per song
     :return Y: Label attached to each song
     """
-    list = open(list_audios, 'r')
+    songs_list = open(list_audios, 'r')
     X = []
     Y = []
     n_song = 0
-    for song in list:
-        X.append(extract_cnn_features(prefix + song[1:-1]))
-        ground_truth = song[2:song.rfind('/')]
-        print(str(n_song)+': '+song[1:-1])
+    for song in songs_list:
+        ground_truth = song[:song.rfind('/')]
+        print(str(n_song) + ': ' + song[:-1])
         if ground_truth == 'blues':
+            X.append(extract_features(prefix + song[:-1], features_type))
             Y.append(0)
         elif ground_truth == 'classical':
+            X.append(extract_features(prefix + song[:-1], features_type))
             Y.append(1)
         elif ground_truth == 'country':
+            X.append(extract_features(prefix + song[:-1], features_type))
             Y.append(2)
         elif ground_truth == 'disco':
+            X.append(extract_features(prefix + song[:-1], features_type))
             Y.append(3)
         elif ground_truth == 'hiphop':
+            X.append(extract_features(prefix + song[:-1], features_type))
             Y.append(4)
         elif ground_truth == 'jazz':
+            X.append(extract_features(prefix + song[:-1], features_type))
             Y.append(5)
         elif ground_truth == 'metal':
+            X.append(extract_features(prefix + song[:-1], features_type))
             Y.append(6)
         elif ground_truth == 'pop':
+            X.append(extract_features(prefix + song[:-1], features_type))
             Y.append(7)
         elif ground_truth == 'reggae':
+            X.append(extract_features(prefix + song[:-1], features_type))
             Y.append(8)
         elif ground_truth == 'rock':
+            X.append(extract_features(prefix + song[:-1], features_type))
             Y.append(9)
-        n_song+=1
+        else:
+            print('Warning: did not find the corresponding ground truth (' + str(ground_truth) + ').')
+        n_song += 1
+        print(Y)
+        print(np.array(X).shape)
     return X, Y
 
 
 def model():
-
     with tf.name_scope('model'):
         global x
         x = tf.placeholder(tf.float32, [None, None, config['pre_processing']['n_mels']])
@@ -108,7 +173,9 @@ def model():
 
         print('Input: ' + str(x.get_shape))
 
-        input_layer = tf.reshape(x, [-1, config['pre_processing']['n_frames'], config['pre_processing']['n_mels'], 1])
+        bn_x = tf.layers.batch_normalization(x, training=is_train)
+        input_layer = tf.reshape(bn_x,
+                                 [-1, config['pre_processing']['n_frames'], config['pre_processing']['n_mels'], 1])
         conv1 = tf.layers.conv2d(inputs=input_layer,
                                  filters=32,
                                  kernel_size=[3, 3],
@@ -165,60 +232,82 @@ def model():
 
 if __name__ == '__main__':
 
-    features_definition = model()
+    # FEATURE EXTRACTION
 
     if not config['load_extracted_features']:  # extract and store features
-        features_path = str(config['model_name']) + '_' + str(config['pre_processing']['n_frames']) + \
+
+        if config['features_type'] == 'CNN':
+            features_definition = model()
+
+        features_path = str(config['experiment_name']) + '_' + str(config['pre_processing']['n_frames']) + \
                         '_' + str(str(config['pre_processing']['n_mels'])) + str(int(time.time()))
 
         print('Extract features for train-set..')
-        x_train, y_train = format_data_gtzan(prefix=config['audio_path'],
-                                             list_audios=config['train_set_list'])
+        x_pre_train, y_train = format_data_gtzan(prefix=config['audio_path'],
+                                                 list_audios=config['train_set_list'],
+                                                 features_type=config['features_type'])
 
         print('Extract features for val-set..')
-        x_val, y_val = format_data_gtzan(prefix=config['audio_path'],
-                                         list_audios=config['val_set_list'])
+        x_pre_val, y_val = format_data_gtzan(prefix=config['audio_path'],
+                                             list_audios=config['val_set_list'],
+                                             features_type=config['features_type'])
 
         print('Extract features for test-set..')
-        x_test, y_test = format_data_gtzan(prefix=config['audio_path'],
-                                           list_audios=config['test_set_list'])
+        x_pre_test, y_test = format_data_gtzan(prefix=config['audio_path'],
+                                               list_audios=config['test_set_list'],
+                                               features_type=config['features_type'])
 
         # storing extacted features
         if not os.path.exists(config['save_extracted_features_folder']):
             os.makedirs(config['save_extracted_features_folder'])
         with open(config['save_extracted_features_folder'] + features_path + '.pkl', 'wb') as f:
-            pickle.dump([x_train, y_train, x_val, y_val, x_test, y_test], f)
+            pickle.dump([x_pre_train, y_train, x_pre_val, y_val, x_pre_test, y_test], f)
 
     else:  # load extracted features
         print('Loading features: ' + config['load_extracted_features'])
         with open(config['load_extracted_features'], 'rb') as f:
-            x_train, y_train, x_val, y_val, x_test, y_test = pickle.load(f)
+            x_pre_train, y_train, x_pre_val, y_val, x_pre_test, y_test = pickle.load(f)
 
-    # Train SVM
-    clf = SVC()
-    clf.fit(x_train, y_train)
-    SVC(C=1.0, cache_size=200, class_weight=None, coef0=0.0,
-        decision_function_shape='ovr', degree=3, gamma='auto', kernel='rbf',
-        max_iter=-1, probability=False, random_state=None, shrinking=True,
-        tol=0.001, verbose=False)
+    if config['features_type'] == 'CNN':
+        # select features
+        print('in CNN')
+        x_train = select_cnn_feature_layers(x_pre_train, config['selected_features_list'])
+        x_val = select_cnn_feature_layers(x_pre_val, config['selected_features_list'])
+        x_test = select_cnn_feature_layers(x_pre_test, config['selected_features_list'])
+    else:
+        x_train = x_pre_train
+        x_val = x_pre_val
+        x_test = x_pre_test
 
-    # Validation set: search hyper-parameters
+    # CLASSIFIER
 
-    # Test set: evaluate
+    if config['partition'] == 'defined':
+        x_dev = np.concatenate((x_train, x_val), axis=0)
+        y_dev = np.concatenate((y_train, y_val), axis=0)
+        val_mask = np.concatenate((-np.ones(len(y_train)), np.zeros(len(y_val))), axis=0)
+        ps = PredefinedSplit(test_fold=val_mask)
+        svc = SVC()
+        svm_hps = GridSearchCV(svc, svm_params, scoring='accuracy', cv=ps)
+        svm_hps.fit(x_dev, y_dev)
+        print('Detailed classification report 0:')
+        svm_test = SVC()
+        svm_test.set_params(**svm_hps.best_params_)
+        print(svm_test)
+        svm_test.fit(x_train, y_train)
+        y_true, y_pred = y_test, svm_test.predict(x_test)
+        print(classification_report(y_true, y_pred))
+        print('Accuracy test set: ')
+        print(accuracy_score(y_test, svm_test.predict(x_test)))
+    else:
+        x_dev = np.concatenate((x_train, x_val, x_test), axis=0)
+        y_dev = np.concatenate((y_train, y_val, y_test), axis=0)
+        svc = SVC()
+        svm_hps = GridSearchCV(svc, svm_params, scoring='accuracy', cv=3)
+        svm_hps.fit(x_dev, y_dev)
+        print('Detailed classification report 1:')
+        import ipdb; ipdb.set_trace()
+        print(svm_hps.best_score_)
 
-    # Unit test
-    print("val-0: ")
-    print(clf.predict([x_val[0]]))
-    print(y_val[0])
-
-    print("val-1: ")
-    print(clf.predict([x_val[1]]))
-    print(y_val[1])
-
-    print("val-2: ")
-    print(clf.predict([x_val[2]]))
-    print(y_val[2])
-
-    print("val-3: ")
-    print(clf.predict([x_val[3]]))
-    print(y_val[3])
+# COMMENT 1: with linear kernel as option, results get much worse in test-set.
+# BEST RESULT MFCC: 0.524, with rbf kernel only.
+# BEST RESULT BN-CNN: 0.431, with rbf kernel only.
