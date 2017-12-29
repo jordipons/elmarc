@@ -11,11 +11,12 @@ from sklearn.metrics import classification_report
 from sklearn.cross_validation import PredefinedSplit
 
 config = {
-    'experiment_name': 'Choi_new_code',
+    'experiment_name': 'Choi_new_code_istrainFalse_woDrop',
     'pre_processing': {
+        'n_mels': 96,
         'n_frames': 1360  # number of time-frames of hte input time-freq representation
     },
-    'features_type': 'MFCC',
+    'features_type': 'CNN',
     'selected_features_list': [0, 1, 2, 3, 4],
     'load_extracted_features': False,
     # load already extracted features by defining the
@@ -25,6 +26,7 @@ config = {
     'audios_list': '/mnt/vmdata/users/jpons/GTZAN_no_partitions/list.txt',
     'save_extracted_features_folder': '../data/GTZAN/features/'
 }
+
 
 svm_params = [
     {'kernel': ['rbf'],
@@ -38,12 +40,15 @@ svm_params = [
 def select_cnn_feature_layers(feature_maps, selected_features_list):
     selected_features = []
     for i in range(len(feature_maps)):
+        tmp = np.array([])
         for j in selected_features_list:
-            selected_features.append(np.squeeze(feature_maps[i][j]))
+            tmp = np.concatenate((tmp, np.squeeze(feature_maps[i][j])))
+        selected_features.append(tmp)
+        # comprovar que no siguin les mateixes!
     return selected_features
 
 
-def extract_features(audio, feature_type, sampling_rate=16000):
+def extract_features(audio, feature_type, sampling_rate=12000):
     """
     Extract tensor-flow features: extract audio, compute librosa features and
     pass it through the tensor-flow model to extract the *features_list*
@@ -75,11 +80,15 @@ def extract_features(audio, feature_type, sampling_rate=16000):
                                                    sr=sampling_rate,
                                                    hop_length=256,
                                                    n_fft=512,
-                                                   n_mels=96).T
+                                                   n_mels=config['pre_processing']['n_mels'],
+                                                   power=2,
+                                                   fmin=0.0,
+                                                   fmax=6000.0).T
 
         # normalize audio representation
-        audio_rep = np.log10(10000 * audio_rep + 1)
+        # audio_rep = np.log10(10000 * audio_rep + 1)
         # audio_rep = (audio_rep - config['patches_params']['mean']) / config['patches_params']['std']
+        audio_rep = librosa.core.logamplitude(audio_rep)
         audio_rep = np.expand_dims(audio_rep, axis=0)
         audio_rep = audio_rep[:, :config['pre_processing']['n_frames'], :]
 
@@ -170,8 +179,7 @@ def model():
                                  name='1CNN',
                                  kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
         bn_conv1 = tf.layers.batch_normalization(conv1, training=is_train)
-        dropped_conv1 = tf.layers.dropout(inputs=bn_conv1, rate=0.3, training=is_train)
-        pool1 = tf.layers.max_pooling2d(inputs=dropped_conv1, pool_size=[4, 2], strides=[4, 2])
+        pool1 = tf.layers.max_pooling2d(inputs=bn_conv1, pool_size=[4, 2], strides=[4, 2])
 
         conv2 = tf.layers.conv2d(inputs=pool1,
                                  filters=32,
@@ -181,8 +189,7 @@ def model():
                                  name='2CNN',
                                  kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
         bn_conv2 = tf.layers.batch_normalization(conv2, training=is_train)
-        dropped_conv2 = tf.layers.dropout(bn_conv2, rate=0.3, training=is_train)
-        pool2 = tf.layers.max_pooling2d(inputs=dropped_conv2, pool_size=[4, 3], strides=[4, 3])
+        pool2 = tf.layers.max_pooling2d(inputs=bn_conv2, pool_size=[4, 3], strides=[4, 3])
 
         conv3 = tf.layers.conv2d(inputs=pool2,
                                  filters=32,
@@ -192,8 +199,7 @@ def model():
                                  name='3CNN',
                                  kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
         bn_conv3 = tf.layers.batch_normalization(conv3, training=is_train)
-        dropped_conv3 = tf.layers.dropout(bn_conv3, rate=0.3, training=is_train)
-        pool3 = tf.layers.max_pooling2d(inputs=dropped_conv3, pool_size=[5, 1], strides=[5, 1])
+        pool3 = tf.layers.max_pooling2d(inputs=bn_conv3, pool_size=[5, 1], strides=[5, 1])
 
         conv4 = tf.layers.conv2d(inputs=pool3,
                                  filters=32,
@@ -203,8 +209,7 @@ def model():
                                  name='4CNN',
                                  kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
         bn_conv4 = tf.layers.batch_normalization(conv4, training=is_train)
-        dropped_conv4 = tf.layers.dropout(bn_conv4, rate=0.3, training=is_train)
-        pool4 = tf.layers.max_pooling2d(inputs=dropped_conv4, pool_size=[4, 3], strides=[4, 3])
+        pool4 = tf.layers.max_pooling2d(inputs=bn_conv4, pool_size=[4, 3], strides=[4, 3])
 
         conv5 = tf.layers.conv2d(inputs=pool4, filters=32, kernel_size=[3, 3], padding='valid', activation=tf.nn.elu,
                                  name='5CNN', kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
@@ -249,6 +254,13 @@ if __name__ == '__main__':
             x, y = pickle.load(f)
 
 
+    if config['features_type'] == 'CNN':
+        # select features
+        print('in CNN')
+        x = select_cnn_feature_layers(x, config['selected_features_list'])
+
+    print(np.array(x).shape)
+
     #------------#
     # CLASSIFIER #
     #------------#
@@ -257,3 +269,5 @@ if __name__ == '__main__':
     svm_hps = GridSearchCV(svc, svm_params, cv=10, n_jobs=3, pre_dispatch=3*8).fit(x, y)
     print('best score of {}: {}'.format(svm_hps.best_score_,svm_hps.best_params_))
     print(svm_hps.best_score_)
+
+# NOTES ON SPECTROGRAM: Mel power spectrogram. Sampling rate: 12k, fmin=0 i fmax=6000. FUCK, he uses shorter clips!!!
