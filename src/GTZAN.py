@@ -25,7 +25,7 @@ config = {
         'n_frames': 1360,
         'selected_features_list': [0, 1, 2, 3, 4],
         'batch_size': 100,
-        'is_train': True
+        'is_train': False
     },
 
     'sampling_rate': 12000
