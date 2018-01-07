@@ -12,7 +12,7 @@ from sklearn.cross_validation import PredefinedSplit
 
 config = {
 
-    'experiment_name': 'randomOrder_istrainFalse_noDrop_batch100',
+    'experiment_name': 'order_istrainFalse_noDrop_batch200',
     'features_type': 'CNN',
 
     'load_extracted_features': False,
@@ -22,10 +22,10 @@ config = {
    
     'CNN': {
         'n_mels': 96,
-        'n_frames': 1360, 
+        'n_frames': 1360,
         'selected_features_list': [0, 1, 2, 3, 4],
         'batch_size': 100,
-        'is_train': False
+        'is_train': True
     },
 
     'sampling_rate': 12000
