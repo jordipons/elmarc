@@ -42,7 +42,8 @@ svm_params = [
      'C': [0.1, 2.0, 8.0, 32.0]}
 ]
 
-########################### CNNs STUFF ###########################
+
+# CNNs
 
 def iterate_minibatches(prefix, audio_paths_list, batchsize):
     for start_i in range(0, len(audio_paths_list) - batchsize + 1, batchsize):          
@@ -183,7 +184,6 @@ def select_cnn_feature_layers(feature_maps, selected_features_list):
         for j in selected_features_list:
             tmp = np.concatenate((tmp, np.squeeze(feature_maps[i][j])))
         selected_features.append(tmp)
-        # comprovar que no siguin les mateixes!
     return selected_features
 
 
@@ -218,7 +218,7 @@ def gtzan_ground_truth(ground_truth):
 
 # MFCCs
 
-def extract_mfcc_features(audio, sampling_rate=12000):
+def extract_mfcc_features(audio, sampling_rate=12000): # as in https://github.com/keunwoochoi/transfer_learning_music/
     src_zeros = np.zeros(1024) # min length to have 3-frame mfcc's
     src, sr = librosa.load(audio, sr=sampling_rate, duration=29.) # max len: 29s, can be shorter.
     if len(src) < 1024:
@@ -292,8 +292,7 @@ if __name__ == '__main__':
 
 
     if config['features_type'] == 'CNN':
-        # select features
-        print('in CNN')
+        print('Select CNN features..')
         x = select_cnn_feature_layers(x, config['CNN']['selected_features_list'])
 
     print(np.array(x).shape)
@@ -304,8 +303,8 @@ if __name__ == '__main__':
 
     svc = SVC()
     svm_hps = GridSearchCV(svc, svm_params, cv=10, n_jobs=3, pre_dispatch=3*8).fit(x, y)
-    print('best score of {}: {}'.format(svm_hps.best_score_,svm_hps.best_params_))
+    print('Best score of {}: {}'.format(svm_hps.best_score_,svm_hps.best_params_))
     print(svm_hps.best_score_)
     print(config)
 
-# NOTES ON SPECTROGRAM: Mel power spectrogram. Sampling rate: 12k, fmin=0 i fmax=6000. FUCK, he uses shorter clips!!!
+# NOTES ON SPECTROGRAM - Mel power spectrogram. Sampling rate: 12k. fmin=0 and fmax=6000. Using shorter clips.
