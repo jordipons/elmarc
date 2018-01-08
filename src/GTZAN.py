@@ -31,9 +31,13 @@ config = {
         'n_frames': 1360,
         'batch_size': 20,
         'is_train': False, 
+
         'architecture': 'cnn_small_filters',
-        #'architecture': 'cnn_music',
+        'num_filters': 90, # 90 or 32
         'selected_features_list': [0, 1, 2, 3, 4]
+
+        #'architecture': 'cnn_music',
+        #'num_filters': 16, # 16 or 8
         #'selected_features_list': [0] # 'timbral' [0] or 'temporal' [1] or 'both' [0, 1]
     },
 }
@@ -206,11 +210,13 @@ def cnn_small_filters():
 
 def cnn_music():
    
-    num_filt = 16
-    remove = 4
-    #num_filt = 8
-    #remove = 2
-   
+    # remove some temporal filters to have the same ammount of timbral and temporal filters
+    if config['CNN']['num_filters'] == 16:
+        remove = 4
+    elif config['CNN']['num_filters'] == 8:
+        remove = 2
+
+    # define the cnn_music model  
     with tf.name_scope('cnn_music'):
         global x
         x = tf.placeholder(tf.float32, [None, None, config['CNN']['n_mels']])
