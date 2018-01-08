@@ -11,18 +11,19 @@ from sklearn.metrics import classification_report
 from sklearn.cross_validation import PredefinedSplit
 
 # TODO: - minibatch processing: provide all data
-#       - store result in a txt file
-#       - experiment name smarter
 
 config = {
 
-    'experiment_name': 'order_istrainFalse_noDrop_batch200',
-    'features_type': 'CNN',
+    'experiment_name': 'v0',
+    'features_type': 'CNN', # CNN or MFCC
 
     'load_extracted_features': False,
-    'audio_path': '/mnt/vmdata/users/jpons/GTZAN/',
-    'audios_list': '/mnt/vmdata/users/jpons/GTZAN_no_partitions_random/list_random.txt',
+    #'audio_path': '/mnt/vmdata/users/jpons/GTZAN/',
+    'audio_path': '/mnt/vmdata/users/jpons/GTZAN_debug/',
+    #'audios_list': '/mnt/vmdata/users/jpons/GTZAN_no_partitions_random/list_random.txt',
+    'audios_list': '/mnt/vmdata/users/jpons/GTZAN_debug_partitions/list.txt',
     'save_extracted_features_folder': '../data/GTZAN/features/', 
+    'results_folder': '../data/GTZAN/results/',
    
     'sampling_rate': 12000,
 
@@ -42,8 +43,7 @@ config = {
     },
 }
 
-# CANVIAR CROSS VALIDATION TO 10!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+# PUT BACK 10 FOLD VALIDATION!!!
 
 svm_params = [
 
@@ -58,10 +58,15 @@ svm_params = [
 # CNNs
 
 def count_params(trainable_variables):
-    "return number of trainable variables - specifically tf.trainable_variables()"
+    "Return number of trainable variables, specifically: tf.trainable_variables()"
     return np.sum([np.prod(v.get_shape().as_list()) for v in trainable_variables])
 
 def iterate_minibatches(prefix, audio_paths_list, batchsize):
+
+    total_size = len(audio_paths_list)
+    n_leftover = int(total_size % batchsize)
+    leftover = n_leftover != 0
+
     for start_i in range(0, len(audio_paths_list) - batchsize + 1, batchsize):          
         first = True
         ground_truth = []
@@ -69,7 +74,7 @@ def iterate_minibatches(prefix, audio_paths_list, batchsize):
             file_path = prefix + audio_paths_list[i]
             file_path = file_path[:-1] # remove /n
             tag = audio_paths_list[i][:audio_paths_list[i].rfind('/')]
-            print(file_path)
+            print(str(i) + ': ' + file_path)
             if first:
                 data = compute_spectrogram(file_path,config['sampling_rate'])
                 first = False
@@ -77,8 +82,22 @@ def iterate_minibatches(prefix, audio_paths_list, batchsize):
                 data = np.append(data,compute_spectrogram(file_path,config['sampling_rate']), axis=0)
             ground_truth.append(gtzan_ground_truth(tag))
         yield data, ground_truth
-    
-    # TODO: get resting samples
+
+    if leftover:
+        first = True
+        ground_truth = []
+        for i in range(start_i + batchsize, start_i + batchsize + n_leftover,1):
+            file_path = prefix + audio_paths_list[i]
+            file_path = file_path[:-1] # remove /n
+            tag = audio_paths_list[i][:audio_paths_list[i].rfind('/')]
+            print(str(i) + ': ' + file_path)
+            if first:
+                data = compute_spectrogram(file_path,config['sampling_rate'])
+                first = False
+            else:
+                data = np.append(data,compute_spectrogram(file_path,config['sampling_rate']), axis=0)
+            ground_truth.append(gtzan_ground_truth(tag))
+        yield data, ground_truth
 
 
 def format_cnn_data(prefix, list_audios):
@@ -96,7 +115,8 @@ def format_cnn_data(prefix, list_audios):
         # l: other feature-map axis
         # m: feature-map
         feature_maps = sess.run(features_definition, feed_dict={x: batch[0], is_train: config['CNN']['is_train']})
-        for j in range(config['CNN']['batch_size']): # for every song in a batch
+        print(batch[0].shape[0])
+        for j in range(batch[0].shape[0]): # for every song in a batch
             tmp_features = np.zeros((len(feature_maps),feature_maps[0].shape[-1]))
             for i in range(len(feature_maps)): # for every bunch of extracted features
                 for m in range(feature_maps[i].shape[-1]): # for every feature-map
@@ -138,8 +158,6 @@ def compute_spectrogram(audio_path, sampling_rate):
 
 def cnn_small_filters():
 
-    num_filters = 90
-
     with tf.name_scope('cnn_small_filters'):
         global x
         x = tf.placeholder(tf.float32, [None, None, config['CNN']['n_mels']])
@@ -153,7 +171,7 @@ def cnn_small_filters():
         input_layer = tf.reshape(bn_x,
                                  [-1, config['CNN']['n_frames'], config['CNN']['n_mels'], 1])
         conv1 = tf.layers.conv2d(inputs=input_layer,
-                                 filters=num_filters,
+                                 filters=config['CNN']['num_filters'],
                                  kernel_size=[3, 3],
                                  padding='valid',
                                  activation=tf.nn.elu,
@@ -163,7 +181,7 @@ def cnn_small_filters():
         pool1 = tf.layers.max_pooling2d(inputs=bn_conv1, pool_size=[4, 2], strides=[4, 2])
 
         conv2 = tf.layers.conv2d(inputs=pool1,
-                                 filters=num_filters,
+                                 filters=config['CNN']['num_filters'],
                                  kernel_size=[3, 3],
                                  padding='valid',
                                  activation=tf.nn.elu,
@@ -173,7 +191,7 @@ def cnn_small_filters():
         pool2 = tf.layers.max_pooling2d(inputs=bn_conv2, pool_size=[4, 3], strides=[4, 3])
 
         conv3 = tf.layers.conv2d(inputs=pool2,
-                                 filters=num_filters,
+                                 filters=config['CNN']['num_filters'],
                                  kernel_size=[3, 3],
                                  padding='valid',
                                  activation=tf.nn.elu,
@@ -183,7 +201,7 @@ def cnn_small_filters():
         pool3 = tf.layers.max_pooling2d(inputs=bn_conv3, pool_size=[5, 1], strides=[5, 1])
 
         conv4 = tf.layers.conv2d(inputs=pool3,
-                                 filters=num_filters,
+                                 filters=config['CNN']['num_filters'],
                                  kernel_size=[3, 3],
                                  padding='valid',
                                  activation=tf.nn.elu,
@@ -192,7 +210,7 @@ def cnn_small_filters():
         bn_conv4 = tf.layers.batch_normalization(conv4, training=is_train)
         pool4 = tf.layers.max_pooling2d(inputs=bn_conv4, pool_size=[4, 3], strides=[4, 3])
 
-        conv5 = tf.layers.conv2d(inputs=pool4, filters=num_filters, kernel_size=[3, 3], padding='valid', activation=tf.nn.elu,
+        conv5 = tf.layers.conv2d(inputs=pool4, filters=config['CNN']['num_filters'], kernel_size=[3, 3], padding='valid', activation=tf.nn.elu,
                                  name='5CNN', kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
 
     global sess
@@ -238,7 +256,7 @@ def cnn_music():
 
         # [TIMBRE] filter shape 1: 7x0.9f
         conv1 = tf.layers.conv2d(inputs=input_pad_7,
-                             filters=num_filt,
+                             filters=config['CNN']['num_filters'],
                              kernel_size=[7, int(0.9 * config['CNN']['n_mels'])],
                              padding="valid",
                              activation=tf.nn.relu,
@@ -251,7 +269,7 @@ def cnn_music():
 
         # [TIMBRE] filter shape 2: 3x0.9f
         conv2 = tf.layers.conv2d(inputs=input_pad_3, 
-                             filters=num_filt*2,
+                             filters=config['CNN']['num_filters']*2,
                              kernel_size=[3, int(0.9 * config['CNN']['n_mels'])],
                              padding="valid",
                              activation=tf.nn.relu,
@@ -264,7 +282,7 @@ def cnn_music():
 
         # [TIMBRE] filter shape 3: 1x0.9f
         conv3 = tf.layers.conv2d(inputs=input_layer, 
-                             filters=num_filt*4,
+                             filters=config['CNN']['num_filters']*4,
                              kernel_size=[1, int(0.9 * config['CNN']['n_mels'])],
                              padding="valid",
                              activation=tf.nn.relu,
@@ -277,7 +295,7 @@ def cnn_music():
 
         # [TIMBRE] filter shape 3: 7x0.4f
         conv4 = tf.layers.conv2d(inputs=input_pad_7,
-                             filters=num_filt,
+                             filters=config['CNN']['num_filters'],
                              kernel_size=[7, int(0.4 * config['CNN']['n_mels'])],
                              padding="valid",
                              activation=tf.nn.relu,
@@ -290,7 +308,7 @@ def cnn_music():
 
         # [TIMBRE] filter shape 5: 3x0.4f
         conv5 = tf.layers.conv2d(inputs=input_pad_3, 
-                             filters=num_filt*2,
+                             filters=config['CNN']['num_filters']*2,
                              kernel_size=[3, int(0.4 * config['CNN']['n_mels'])],
                              padding="valid",
                              activation=tf.nn.relu,
@@ -302,7 +320,7 @@ def cnn_music():
 
         # [TIMBRE] filter shape 6: 1x0.4f
         conv6 = tf.layers.conv2d(inputs=input_layer, 
-                             filters=num_filt*4,
+                             filters=config['CNN']['num_filters']*4,
                              kernel_size=[1, int(0.4 * config['CNN']['n_mels'])], padding="valid",
                              activation=tf.nn.relu,
                              kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
@@ -317,7 +335,7 @@ def cnn_music():
                                         strides=[1, config['CNN']['n_mels']])
         pool7_rs = tf.squeeze(pool7, [3])
         conv7 = tf.layers.conv1d(inputs=pool7_rs,
-                             filters=num_filt-remove,
+                             filters=config['CNN']['num_filters']-remove,
                              kernel_size=165,
                              padding="same",
                              activation=tf.nn.relu,
@@ -330,7 +348,7 @@ def cnn_music():
                                         strides=[1, config['CNN']['n_mels']])
         pool8_rs = tf.squeeze(pool8, [3])
         conv8 = tf.layers.conv1d(inputs=pool8_rs,
-                             filters=num_filt*2-remove,
+                             filters=config['CNN']['num_filters']*2-remove,
                              kernel_size=128,
                              padding="same",
                              activation=tf.nn.relu,
@@ -343,7 +361,7 @@ def cnn_music():
                                         strides=[1, config['CNN']['n_mels']])
         pool9_rs = tf.squeeze(pool9, [3])
         conv9 = tf.layers.conv1d(inputs=pool9_rs,
-                             filters=num_filt*4-remove,
+                             filters=config['CNN']['num_filters']*4-remove,
                              kernel_size=64,
                              padding="same",
                              activation=tf.nn.relu,
@@ -356,7 +374,7 @@ def cnn_music():
                                          strides=[1, config['CNN']['n_mels']])
         pool10_rs = tf.squeeze(pool10, [3])
         conv10 = tf.layers.conv1d(inputs=pool10_rs,
-                              filters=num_filt*8-remove,
+                              filters=config['CNN']['num_filters']*8-remove,
                               kernel_size=32,
                               padding="same",
                               activation=tf.nn.relu,
@@ -462,7 +480,14 @@ if __name__ == '__main__':
 
     if not config['load_extracted_features']: 
 
-        features_path = str(config['experiment_name']) + '_' + str(int(time.time()))
+        if config['features_type'] == 'MFCC':
+            experiment_name = str(config['experiment_name']) + '_MFCC_' + str(int(time.time()))
+        elif config['features_type'] == 'CNN':
+            experiment_name = str(config['experiment_name']) + '_CNN_' + str(config['CNN']['n_mels']) \
+                + '_' + str(config['CNN']['n_frames']) + '_' + str(config['CNN']['batch_size']) \
+                + '_' + str(config['CNN']['is_train']) + '_' + str(config['CNN']['architecture']) \
+                + '_' + str(config['CNN']['num_filters']) + '_' + str(config['CNN']['selected_features_list']) \
+                + '_'+ str(int(time.time()))
 
         print('Extracting features..')
 
@@ -488,7 +513,7 @@ if __name__ == '__main__':
         if not os.path.exists(config['save_extracted_features_folder']):
             os.makedirs(config['save_extracted_features_folder'])
 
-        with open(config['save_extracted_features_folder'] + features_path + '.pkl', 'wb') as f:
+        with open(config['save_extracted_features_folder'] + experiment_name + '.pkl', 'wb') as f:
             pickle.dump([x, y, config], f)
 
     else:  # load extracted features
@@ -510,8 +535,19 @@ if __name__ == '__main__':
     #------------#
 
     svc = SVC()
-    svm_hps = GridSearchCV(svc, svm_params, cv=10, n_jobs=3, pre_dispatch=3*8).fit(x, y)
-    #svm_hps = GridSearchCV(svc, svm_params, cv=2, n_jobs=3, pre_dispatch=3*8).fit(x, y)
+    #svm_hps = GridSearchCV(svc, svm_params, cv=10, n_jobs=3, pre_dispatch=3*8).fit(x, y)
+    svm_hps = GridSearchCV(svc, svm_params, cv=2, n_jobs=3, pre_dispatch=3*8).fit(x, y)
+
+    print('Storing extracted features..')        
+
+    if not os.path.exists(config['results_folder']):
+        os.makedirs(config['results_folder'])
+
+    f = open(config['results_folder'] + experiment_name + '.txt','w')
+    f.write('Best score of' + str(svm_hps.best_score_) + ':' + str(svm_hps.best_params_))
+    f.write(str(config))
+    f.close()
+
     print('Best score of {}: {}'.format(svm_hps.best_score_,svm_hps.best_params_))
     print(svm_hps.best_score_)
     print(config)
