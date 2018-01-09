@@ -32,13 +32,13 @@ config = {
         'batch_size': 10,
         'is_train': False, 
 
-        'architecture': 'cnn_small_filters',
-        'num_filters': 32, # 90 or 32
-        'selected_features_list': [0, 1, 2, 3, 4]
+        #'architecture': 'cnn_small_filters',
+        #'num_filters': 32, # 90 or 32
+        #'selected_features_list': [0, 1, 2, 3, 4]
 
-        #'architecture': 'cnn_music',
-        #'num_filters': 128, # 128 or 64 or 32 or 16 or 8 or 4
-        #'selected_features_list': [0,1] # 'timbral' [0] or 'temporal' [1] or 'both' [0, 1]
+        'architecture': 'cnn_music',
+        'num_filters': 128, # 128 or 64 or 32 or 16 or 8 or 4
+        'selected_features_list': [0,1] # 'timbral' [0] or 'temporal' [1] or 'both' [0, 1]
     },
 }
 
@@ -161,8 +161,8 @@ def cnn_as_choi():
 
         print('Input: ' + str(x.get_shape))
 
-        bn_x = tf.layers.batch_normalization(x, training=is_train)
-        input_layer = tf.reshape(bn_x,
+        #bn_x = tf.layers.batch_normalization(x, training=is_train)
+        input_layer = tf.reshape(x,
                                  [-1, config['CNN']['n_frames'], config['CNN']['n_mels'], 1])
         conv1 = tf.layers.conv2d(inputs=input_layer,
                                  filters=config['CNN']['num_filters'],
@@ -171,8 +171,8 @@ def cnn_as_choi():
                                  activation=tf.nn.elu,
                                  name='1CNN',
                                  kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-        bn_conv1 = tf.layers.batch_normalization(conv1, training=is_train)
-        pool1 = tf.layers.max_pooling2d(inputs=bn_conv1, pool_size=[4, 2], strides=[4, 2])
+        #bn_conv1 = tf.layers.batch_normalization(conv1, training=is_train)
+        pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[4, 2], strides=[4, 2])
 
         conv2 = tf.layers.conv2d(inputs=pool1,
                                  filters=config['CNN']['num_filters'],
@@ -181,8 +181,8 @@ def cnn_as_choi():
                                  activation=tf.nn.elu,
                                  name='2CNN',
                                  kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-        bn_conv2 = tf.layers.batch_normalization(conv2, training=is_train)
-        pool2 = tf.layers.max_pooling2d(inputs=bn_conv2, pool_size=[4, 3], strides=[4, 3])
+        #bn_conv2 = tf.layers.batch_normalization(conv2, training=is_train)
+        pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size=[4, 3], strides=[4, 3])
 
         conv3 = tf.layers.conv2d(inputs=pool2,
                                  filters=config['CNN']['num_filters'],
@@ -191,8 +191,8 @@ def cnn_as_choi():
                                  activation=tf.nn.elu,
                                  name='3CNN',
                                  kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-        bn_conv3 = tf.layers.batch_normalization(conv3, training=is_train)
-        pool3 = tf.layers.max_pooling2d(inputs=bn_conv3, pool_size=[5, 2], strides=[5, 2])
+        #bn_conv3 = tf.layers.batch_normalization(conv3, training=is_train)
+        pool3 = tf.layers.max_pooling2d(inputs=conv3, pool_size=[5, 2], strides=[5, 2])
 
         conv4 = tf.layers.conv2d(inputs=pool3,
                                  filters=config['CNN']['num_filters'],
@@ -201,8 +201,8 @@ def cnn_as_choi():
                                  activation=tf.nn.elu,
                                  name='4CNN',
                                  kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-        bn_conv4 = tf.layers.batch_normalization(conv4, training=is_train)
-        pool4 = tf.layers.max_pooling2d(inputs=bn_conv4, pool_size=[4, 2], strides=[4, 2])
+        #bn_conv4 = tf.layers.batch_normalization(conv4, training=is_train)
+        pool4 = tf.layers.max_pooling2d(inputs=conv4, pool_size=[4, 2], strides=[4, 2])
 
         conv5 = tf.layers.conv2d(inputs=pool4, 
                                  filters=config['CNN']['num_filters'], 
@@ -211,8 +211,8 @@ def cnn_as_choi():
                                  activation=tf.nn.elu,
                                  name='5CNN', 
                                  kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-        bn_conv5 = tf.layers.batch_normalization(conv5, training=is_train)
-        pool5 = tf.layers.max_pooling2d(inputs=bn_conv5, pool_size=[4, 4], strides=[4, 4])
+        #bn_conv5 = tf.layers.batch_normalization(conv5, training=is_train)
+        pool5 = tf.layers.max_pooling2d(inputs=conv5, pool_size=[4, 4], strides=[4, 4])
 
     global sess
     sess = tf.InteractiveSession()
@@ -327,8 +327,8 @@ def cnn_music():
         print('Input: ' + str(x.get_shape))
 
         # batch norm input? !!!!!!
-        bn_x = tf.layers.batch_normalization(x, training=is_train)
-        input_layer = tf.reshape(bn_x,
+        #bn_x = tf.layers.batch_normalization(x, training=is_train)
+        input_layer = tf.reshape(x,
                                  [-1, config['CNN']['n_frames'], config['CNN']['n_mels'], 1])
 
         # padding only time domain for an efficient 'same' implementation
@@ -343,10 +343,10 @@ def cnn_music():
                              padding="valid",
                              activation=tf.nn.relu,
                              kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-        bn_conv1 = tf.layers.batch_normalization(conv1, training=is_train)
-        pool1 = tf.layers.max_pooling2d(inputs=bn_conv1,
-                                    pool_size=[1, bn_conv1.shape[2]],
-                                    strides=[1, bn_conv1.shape[2]])
+        #bn_conv1 = tf.layers.batch_normalization(conv1, training=is_train)
+        pool1 = tf.layers.max_pooling2d(inputs=conv1,
+                                    pool_size=[1, conv1.shape[2]],
+                                    strides=[1, conv1.shape[2]])
         p1 = tf.squeeze(pool1, [2])
 
         # [TIMBRE] filter shape 2: 3x0.9f
@@ -356,10 +356,10 @@ def cnn_music():
                              padding="valid",
                              activation=tf.nn.relu,
                              kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-        bn_conv2 = tf.layers.batch_normalization(conv2, training=is_train)
-        pool2 = tf.layers.max_pooling2d(inputs=bn_conv2,
-                                    pool_size=[1, bn_conv2.shape[2]],
-                                    strides=[1, bn_conv2.shape[2]])
+        #bn_conv2 = tf.layers.batch_normalization(conv2, training=is_train)
+        pool2 = tf.layers.max_pooling2d(inputs=conv2,
+                                    pool_size=[1, conv2.shape[2]],
+                                    strides=[1, conv2.shape[2]])
         p2 = tf.squeeze(pool2, [2])
 
         # [TIMBRE] filter shape 3: 1x0.9f
@@ -369,10 +369,10 @@ def cnn_music():
                              padding="valid",
                              activation=tf.nn.relu,
                              kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-        bn_conv3 = tf.layers.batch_normalization(conv3, training=is_train)
-        pool3 = tf.layers.max_pooling2d(inputs=bn_conv3,
-                                    pool_size=[1, bn_conv3.shape[2]],
-                                    strides=[1, bn_conv3.shape[2]])
+        #bn_conv3 = tf.layers.batch_normalization(conv3, training=is_train)
+        pool3 = tf.layers.max_pooling2d(inputs=conv3,
+                                    pool_size=[1, conv3.shape[2]],
+                                    strides=[1, conv3.shape[2]])
         p3 = tf.squeeze(pool3, [2])
 
         # [TIMBRE] filter shape 3: 7x0.4f
@@ -382,10 +382,10 @@ def cnn_music():
                              padding="valid",
                              activation=tf.nn.relu,
                              kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-        bn_conv4 = tf.layers.batch_normalization(conv4, training=is_train)
-        pool4 = tf.layers.max_pooling2d(inputs=bn_conv4,
-                                    pool_size=[1, bn_conv4.shape[2]],
-                                    strides=[1, bn_conv4.shape[2]])
+        #bn_conv4 = tf.layers.batch_normalization(conv4, training=is_train)
+        pool4 = tf.layers.max_pooling2d(inputs=conv4,
+                                    pool_size=[1, conv4.shape[2]],
+                                    strides=[1, conv4.shape[2]])
         p4 = tf.squeeze(pool4, [2])
 
         # [TIMBRE] filter shape 5: 3x0.4f
@@ -395,9 +395,9 @@ def cnn_music():
                              padding="valid",
                              activation=tf.nn.relu,
                              kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-        bn_conv5 = tf.layers.batch_normalization(conv5, training=is_train)
-        pool5 = tf.layers.max_pooling2d(inputs=bn_conv5, pool_size=[1, bn_conv5.shape[2]],
-                                    strides=[1, bn_conv5.shape[2]])
+        #bn_conv5 = tf.layers.batch_normalization(conv5, training=is_train)
+        pool5 = tf.layers.max_pooling2d(inputs=conv5, pool_size=[1, conv5.shape[2]],
+                                    strides=[1, conv5.shape[2]])
         p5 = tf.squeeze(pool5, [2])
 
         # [TIMBRE] filter shape 6: 1x0.4f
@@ -406,9 +406,9 @@ def cnn_music():
                              kernel_size=[1, int(0.4 * config['CNN']['n_mels'])], padding="valid",
                              activation=tf.nn.relu,
                              kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-        bn_conv6 = tf.layers.batch_normalization(conv6, training=is_train)
-        pool6 = tf.layers.max_pooling2d(inputs=bn_conv6, pool_size=[1, bn_conv6.shape[2]],
-                                    strides=[1, bn_conv6.shape[2]])
+        #bn_conv6 = tf.layers.batch_normalization(conv6, training=is_train)
+        pool6 = tf.layers.max_pooling2d(inputs=conv6, pool_size=[1, conv6.shape[2]],
+                                    strides=[1, conv6.shape[2]])
         p6 = tf.squeeze(pool6, [2])
 
         # [TEMPORAL-FEATURES] - average pooling + filter shape 7: 165x1
@@ -422,7 +422,7 @@ def cnn_music():
                              padding="same",
                              activation=tf.nn.relu,
                              kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-        bn_conv7 = tf.layers.batch_normalization(conv7, training=is_train)
+        #bn_conv7 = tf.layers.batch_normalization(conv7, training=is_train)
 
         # [TEMPORAL-FEATURES] - average pooling + filter shape 8: 128x1
         pool8 = tf.layers.average_pooling2d(inputs=input_layer,
@@ -435,7 +435,7 @@ def cnn_music():
                              padding="same",
                              activation=tf.nn.relu,
                              kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-        bn_conv8 = tf.layers.batch_normalization(conv8, training=is_train)
+        #bn_conv8 = tf.layers.batch_normalization(conv8, training=is_train)
 
         # [TEMPORAL-FEATURES] - average pooling + filter shape 9: 64x1
         pool9 = tf.layers.average_pooling2d(inputs=input_layer,
@@ -448,7 +448,7 @@ def cnn_music():
                              padding="same",
                              activation=tf.nn.relu,
                              kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-        bn_conv9 = tf.layers.batch_normalization(conv9, training=is_train)
+        #bn_conv9 = tf.layers.batch_normalization(conv9, training=is_train)
 
         # [TEMPORAL-FEATURES] - average pooling + filter shape 10: 32x1
         pool10 = tf.layers.average_pooling2d(inputs=input_layer,
@@ -461,7 +461,7 @@ def cnn_music():
                               padding="same",
                               activation=tf.nn.relu,
                               kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-        bn_conv10 = tf.layers.batch_normalization(conv10, training=is_train)
+        #bn_conv10 = tf.layers.batch_normalization(conv10, training=is_train)
 
 
     global sess
@@ -470,7 +470,7 @@ def cnn_music():
 
     # concatenate all feature maps
     timbral = tf.concat([p1, p2, p3, p4, p5, p6], 2)
-    temporal = tf.concat([bn_conv7, bn_conv8, bn_conv9, bn_conv10], 2)
+    temporal = tf.concat([conv7, conv8, conv9, conv10], 2)
 
     print(timbral.get_shape)
     print(temporal.get_shape)
