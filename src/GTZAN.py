@@ -13,8 +13,8 @@ from sklearn.cross_validation import PredefinedSplit
 
 config = {
 
-    'experiment_name': 'v0',
-    'features_type': 'MFCC', # CNN or MFCC
+    'experiment_name': 'v0_choiNET_140444',
+    'features_type': 'CNN', # CNN or MFCC
 
     'load_extracted_features': False,
     'audio_path': '/mnt/vmdata/users/jpons/GTZAN/',
@@ -28,17 +28,17 @@ config = {
 
     'CNN': {
         'n_mels': 96,
-        'n_frames': 1360,
-        'batch_size': 20,
+        'n_frames': 1404, # 1360 or GTZAN: 1407
+        'batch_size': 10,
         'is_train': False, 
 
-        #'architecture': 'cnn_small_filters',
-        #'num_filters': 32, # 90 or 32
-        #'selected_features_list': [0, 1, 2, 3, 4]
+        'architecture': 'cnn_small_filters',
+        'num_filters': 32, # 90 or 32
+        'selected_features_list': [0, 1, 2, 3, 4]
 
-        'architecture': 'cnn_music',
-        'num_filters': 128, # 128 or 64 or 32 or 16 or 8 or 4
-        'selected_features_list': [0,1] # 'timbral' [0] or 'temporal' [1] or 'both' [0, 1]
+        #'architecture': 'cnn_music',
+        #'num_filters': 128, # 128 or 64 or 32 or 16 or 8 or 4
+        #'selected_features_list': [0,1] # 'timbral' [0] or 'temporal' [1] or 'both' [0, 1]
     },
 }
 
@@ -144,10 +144,88 @@ def compute_spectrogram(audio_path, sampling_rate):
     # normalize audio representation
     # audio_rep = np.log10(10000 * audio_rep + 1)
     # audio_rep = (audio_rep - config['patches_params']['mean']) / config['patches_params']['std']
+    print(audio_rep.shape)
     audio_rep = librosa.core.logamplitude(audio_rep)
     audio_rep = np.expand_dims(audio_rep, axis=0)
-    audio_rep = audio_rep[:, :config['CNN']['n_frames'], :]
+    audio_rep = audio_rep[:, :config['CNN']['n_frames'], :] # cropping signal to n_frames
     return audio_rep
+
+def cnn_as_choi():
+
+    with tf.name_scope('cnn_as_choi'):
+        global x
+        x = tf.placeholder(tf.float32, [None, None, config['CNN']['n_mels']])
+
+        global is_train
+        is_train = tf.placeholder(tf.bool)
+
+        print('Input: ' + str(x.get_shape))
+
+        bn_x = tf.layers.batch_normalization(x, training=is_train)
+        input_layer = tf.reshape(bn_x,
+                                 [-1, config['CNN']['n_frames'], config['CNN']['n_mels'], 1])
+        conv1 = tf.layers.conv2d(inputs=input_layer,
+                                 filters=config['CNN']['num_filters'],
+                                 kernel_size=[3, 3],
+                                 padding='same',
+                                 activation=tf.nn.elu,
+                                 name='1CNN',
+                                 kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
+        bn_conv1 = tf.layers.batch_normalization(conv1, training=is_train)
+        pool1 = tf.layers.max_pooling2d(inputs=bn_conv1, pool_size=[4, 2], strides=[4, 2])
+
+        conv2 = tf.layers.conv2d(inputs=pool1,
+                                 filters=config['CNN']['num_filters'],
+                                 kernel_size=[3, 3],
+                                 padding='same',
+                                 activation=tf.nn.elu,
+                                 name='2CNN',
+                                 kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
+        bn_conv2 = tf.layers.batch_normalization(conv2, training=is_train)
+        pool2 = tf.layers.max_pooling2d(inputs=bn_conv2, pool_size=[4, 3], strides=[4, 3])
+
+        conv3 = tf.layers.conv2d(inputs=pool2,
+                                 filters=config['CNN']['num_filters'],
+                                 kernel_size=[3, 3],
+                                 padding='same',
+                                 activation=tf.nn.elu,
+                                 name='3CNN',
+                                 kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
+        bn_conv3 = tf.layers.batch_normalization(conv3, training=is_train)
+        pool3 = tf.layers.max_pooling2d(inputs=bn_conv3, pool_size=[5, 2], strides=[5, 2])
+
+        conv4 = tf.layers.conv2d(inputs=pool3,
+                                 filters=config['CNN']['num_filters'],
+                                 kernel_size=[3, 3],
+                                 padding='same',
+                                 activation=tf.nn.elu,
+                                 name='4CNN',
+                                 kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
+        bn_conv4 = tf.layers.batch_normalization(conv4, training=is_train)
+        pool4 = tf.layers.max_pooling2d(inputs=bn_conv4, pool_size=[4, 2], strides=[4, 2])
+
+        conv5 = tf.layers.conv2d(inputs=pool4, 
+                                 filters=config['CNN']['num_filters'], 
+                                 kernel_size=[3, 3], 
+                                 padding='same', 
+                                 activation=tf.nn.elu,
+                                 name='5CNN', 
+                                 kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
+        bn_conv5 = tf.layers.batch_normalization(conv5, training=is_train)
+        pool5 = tf.layers.max_pooling2d(inputs=bn_conv5, pool_size=[4, 4], strides=[4, 4])
+
+    global sess
+    sess = tf.InteractiveSession()
+    sess.run(tf.global_variables_initializer())
+
+    print(pool1.get_shape)
+    print(pool2.get_shape)
+    print(pool3.get_shape)
+    print(pool4.get_shape)
+    print(pool5.get_shape)
+    print('BU!')
+
+    return [pool1, pool2, pool3, pool4, pool5]
 
 
 def cnn_small_filters():
@@ -210,6 +288,8 @@ def cnn_small_filters():
     global sess
     sess = tf.InteractiveSession()
     sess.run(tf.global_variables_initializer())
+
+    import ipdb; ipdb.set_trace()
 
     print(conv1.get_shape)
     print(conv2.get_shape)
@@ -394,6 +474,9 @@ def cnn_music():
 
     print(timbral.get_shape)
     print(temporal.get_shape)
+    # check [moving_mean, moving_variance, beta, gamma]
+    # [batch_normalization_8/moving_mean:0, batch_normalization_8/moving_variance:0, 'batch_normalization_8/beta', 'batch_normalization_8/gamma:0']
+    # sess.run('batch_normalization_8/moving_mean:0')
 
     return [timbral, temporal]
 
@@ -439,14 +522,10 @@ def gtzan_ground_truth(ground_truth):
 
 # MFCCs
 
-def extract_mfcc_features(audio, sampling_rate=12000): # as in https://github.com/keunwoochoi/transfer_learning_music/
-    src_zeros = np.zeros(1024) # min length to have 3-frame mfcc's
-    src, sr = librosa.load(audio, sr=sampling_rate, duration=29.) # max len: 29s, can be shorter.
-    if len(src) < 1024:
-        print('Warning: audio is too short and the code is zero-padding for you!')
-        src_zeros[:len(src)] = src
-        src = src_zeros
+def extract_mfcc_features(audio, sampling_rate=12000): 
+    src, sr = librosa.load(audio, sr=sampling_rate)
     
+    # dmfcc as in https://github.com/keunwoochoi/transfer_learning_music/
     mfcc = librosa.feature.mfcc(src, sampling_rate, n_mfcc=20)
     dmfcc = mfcc[:, 1:] - mfcc[:, :-1]
     ddmfcc = dmfcc[:, 1:] - dmfcc[:, :-1]
@@ -501,7 +580,8 @@ if __name__ == '__main__':
         if config['features_type'] == 'CNN':
 
             if config['CNN']['architecture'] == 'cnn_small_filters':
-                features_definition = cnn_small_filters()
+                #features_definition = cnn_small_filters()
+                features_definition = cnn_as_choi()
             elif config['CNN']['architecture'] == 'cnn_music':
                 features_definition = cnn_music()
 
