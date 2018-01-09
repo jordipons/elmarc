@@ -10,18 +10,17 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import classification_report
 from sklearn.cross_validation import PredefinedSplit
 
-# TODO: - minibatch processing: provide all data
 
 config = {
 
     'experiment_name': 'v0',
-    'features_type': 'CNN', # CNN or MFCC
+    'features_type': 'MFCC', # CNN or MFCC
 
     'load_extracted_features': False,
-    #'audio_path': '/mnt/vmdata/users/jpons/GTZAN/',
-    'audio_path': '/mnt/vmdata/users/jpons/GTZAN_debug/',
-    #'audios_list': '/mnt/vmdata/users/jpons/GTZAN_no_partitions_random/list_random.txt',
-    'audios_list': '/mnt/vmdata/users/jpons/GTZAN_debug_partitions/list.txt',
+    'audio_path': '/mnt/vmdata/users/jpons/GTZAN/',
+    #'audio_path': '/mnt/vmdata/users/jpons/GTZAN_debug/',
+    'audios_list': '/mnt/vmdata/users/jpons/GTZAN_no_partitions_random/list_random.txt',
+    #'audios_list': '/mnt/vmdata/users/jpons/GTZAN_debug_partitions/list.txt',
     'save_extracted_features_folder': '../data/GTZAN/features/', 
     'results_folder': '../data/GTZAN/results/',
    
@@ -33,17 +32,16 @@ config = {
         'batch_size': 20,
         'is_train': False, 
 
-        'architecture': 'cnn_small_filters',
-        'num_filters': 90, # 90 or 32
-        'selected_features_list': [0, 1, 2, 3, 4]
+        #'architecture': 'cnn_small_filters',
+        #'num_filters': 32, # 90 or 32
+        #'selected_features_list': [0, 1, 2, 3, 4]
 
-        #'architecture': 'cnn_music',
-        #'num_filters': 16, # 16 or 8
-        #'selected_features_list': [0] # 'timbral' [0] or 'temporal' [1] or 'both' [0, 1]
+        'architecture': 'cnn_music',
+        'num_filters': 128, # 128 or 64 or 32 or 16 or 8 or 4
+        'selected_features_list': [0,1] # 'timbral' [0] or 'temporal' [1] or 'both' [0, 1]
     },
 }
 
-# PUT BACK 10 FOLD VALIDATION!!!
 
 svm_params = [
 
@@ -115,16 +113,12 @@ def format_cnn_data(prefix, list_audios):
         # l: other feature-map axis
         # m: feature-map
         feature_maps = sess.run(features_definition, feed_dict={x: batch[0], is_train: config['CNN']['is_train']})
-        print(batch[0].shape[0])
         for j in range(batch[0].shape[0]): # for every song in a batch
             tmp_features = np.zeros((len(feature_maps),feature_maps[0].shape[-1]))
             for i in range(len(feature_maps)): # for every bunch of extracted features
                 for m in range(feature_maps[i].shape[-1]): # for every feature-map
                     if len(feature_maps[i].shape) == 3:
-                        try:
-                            tmp_features[i, m] = np.mean(np.squeeze(feature_maps[i][j, :, m]))
-                        except:
-                            import ipdb; ipdb.set_trace()
+                        tmp_features[i, m] = np.mean(np.squeeze(feature_maps[i][j, :, m]))
                     elif len(feature_maps[i].shape) == 4:
                         tmp_features[i, m] = np.mean(np.squeeze(feature_maps[i][j, :, :, m]))
             X.append(tmp_features)
@@ -229,10 +223,18 @@ def cnn_small_filters():
 def cnn_music():
    
     # remove some temporal filters to have the same ammount of timbral and temporal filters
-    if config['CNN']['num_filters'] == 16:
+    if config['CNN']['num_filters'] == 128:
+        remove = 32    
+    elif config['CNN']['num_filters'] == 64:
+        remove = 16
+    elif config['CNN']['num_filters'] == 32:
+        remove = 8
+    elif config['CNN']['num_filters'] == 16:
         remove = 4
     elif config['CNN']['num_filters'] == 8:
         remove = 2
+    elif config['CNN']['num_filters'] == 4:
+        remove = 1
 
     # define the cnn_music model  
     with tf.name_scope('cnn_music'):
@@ -480,8 +482,11 @@ if __name__ == '__main__':
 
     if not config['load_extracted_features']: 
 
+        print('Set file name (unique identifier) for the experiment..')
+
         if config['features_type'] == 'MFCC':
             experiment_name = str(config['experiment_name']) + '_MFCC_' + str(int(time.time()))
+
         elif config['features_type'] == 'CNN':
             experiment_name = str(config['experiment_name']) + '_CNN_' + str(config['CNN']['n_mels']) \
                 + '_' + str(config['CNN']['n_frames']) + '_' + str(config['CNN']['batch_size']) \
@@ -489,9 +494,12 @@ if __name__ == '__main__':
                 + '_' + str(config['CNN']['num_filters']) + '_' + str(config['CNN']['selected_features_list']) \
                 + '_'+ str(int(time.time()))
 
+        print(experiment_name)
+
         print('Extracting features..')
 
         if config['features_type'] == 'CNN':
+
             if config['CNN']['architecture'] == 'cnn_small_filters':
                 features_definition = cnn_small_filters()
             elif config['CNN']['architecture'] == 'cnn_music':
@@ -504,6 +512,7 @@ if __name__ == '__main__':
                                     list_audios=config['audios_list'])
 
         elif config['features_type'] == 'MFCC':
+
             x, y = format_mfcc_data(prefix=config['audio_path'],
                                     list_audios=config['audios_list'])
 
@@ -525,9 +534,13 @@ if __name__ == '__main__':
 
 
     if config['features_type'] == 'CNN':
+
         print('Select CNN features..')
+
         x = select_cnn_feature_layers(x, config['CNN']['selected_features_list'])
 
+
+    print('Data size (data points, feature vector)..')
     print(np.array(x).shape)
 
     #------------#
@@ -535,8 +548,8 @@ if __name__ == '__main__':
     #------------#
 
     svc = SVC()
-    #svm_hps = GridSearchCV(svc, svm_params, cv=10, n_jobs=3, pre_dispatch=3*8).fit(x, y)
-    svm_hps = GridSearchCV(svc, svm_params, cv=2, n_jobs=3, pre_dispatch=3*8).fit(x, y)
+    svm_hps = GridSearchCV(svc, svm_params, cv=10, n_jobs=3, pre_dispatch=3*8).fit(x, y)
+    #svm_hps = GridSearchCV(svc, svm_params, cv=2, n_jobs=3, pre_dispatch=3*8).fit(x, y)
 
     print('Storing extracted features..')        
 
