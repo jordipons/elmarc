@@ -12,6 +12,7 @@ from sklearn.cross_validation import PredefinedSplit
 
 
 config = {
+    'debug': True,
 
     'experiment_name': 'v0',
     'features_type': 'CNN', # CNN or MFCC
@@ -26,12 +27,11 @@ config = {
 
     'CNN': {
         'n_mels': 96,
-        'n_frames': 1404, # GTZAN: 1407
+        'n_frames': 1407, # GTZAN: 1407, old: 1360
         'batch_size': 10,
-        'is_train': False, 
 
         'architecture': 'cnn_small_filters',
-        'num_filters': 32, # 90 or 32
+        'num_filters': 717, # 90 or 32
         'selected_features_list': [0, 1, 2, 3, 4]
 
         #'architecture': 'cnn_music',
@@ -40,6 +40,9 @@ config = {
     },
 }
 
+if config['debug']:
+    config['audio_path'] = '/mnt/vmdata/users/jpons/GTZAN_debug/'
+    config['audios_list'] = '/mnt/vmdata/users/jpons/GTZAN_debug_partitions/list.txt'
 
 svm_params = [
 
@@ -49,7 +52,9 @@ svm_params = [
 
     {'kernel': ['linear'],
      'C': [0.1, 2.0, 8.0, 32.0]}
+
 ]
+
 
 # CNNs
 
@@ -110,7 +115,7 @@ def format_cnn_data(prefix, list_audios):
         # k: one feature-map axis
         # l: other feature-map axis
         # m: feature-map
-        feature_maps = sess.run(features_definition, feed_dict={x: batch[0], is_train: config['CNN']['is_train']})
+        feature_maps = sess.run(features_definition, feed_dict={x_in: batch[0]})
         for j in range(batch[0].shape[0]): # for every song in a batch
             tmp_features = np.zeros((len(feature_maps),feature_maps[0].shape[-1]))
             for i in range(len(feature_maps)): # for every bunch of extracted features
@@ -149,15 +154,12 @@ def compute_spectrogram(audio_path, sampling_rate):
 def cnn_small_filters():
 
     with tf.name_scope('cnn_as_choi'):
-        global x
-        x = tf.placeholder(tf.float32, [None, None, config['CNN']['n_mels']])
+        global x_in
+        x_in = tf.placeholder(tf.float32, [None, None, config['CNN']['n_mels']])
 
-        global is_train
-        is_train = tf.placeholder(tf.bool)
+        print('Input: ' + str(x_in.get_shape))
 
-        print('Input: ' + str(x.get_shape))
-
-        input_layer = tf.reshape(x,[-1, config['CNN']['n_frames'], config['CNN']['n_mels'], 1])
+        input_layer = tf.reshape(x_in,[-1, config['CNN']['n_frames'], config['CNN']['n_mels'], 1])
         conv1 = tf.layers.conv2d(inputs=input_layer,
                                  filters=config['CNN']['num_filters'],
                                  kernel_size=[3, 3],
@@ -212,7 +214,6 @@ def cnn_small_filters():
     print(pool3.get_shape)
     print(pool4.get_shape)
     print(pool5.get_shape)
-    print('BU!')
 
     return [pool1, pool2, pool3, pool4, pool5]
 
@@ -235,15 +236,12 @@ def cnn_music():
 
     # define the cnn_music model  
     with tf.name_scope('cnn_music'):
-        global x
-        x = tf.placeholder(tf.float32, [None, None, config['CNN']['n_mels']])
+        global x_in
+        x_in = tf.placeholder(tf.float32, [None, None, config['CNN']['n_mels']])
 
-        global is_train
-        is_train = tf.placeholder(tf.bool)
+        print('Input: ' + str(x_in.get_shape))
 
-        print('Input: ' + str(x.get_shape))
-
-        input_layer = tf.reshape(x, [-1, config['CNN']['n_frames'], config['CNN']['n_mels'], 1])
+        input_layer = tf.reshape(x_in, [-1, config['CNN']['n_frames'], config['CNN']['n_mels'], 1])
 
         # padding only time domain for an efficient 'same' implementation
         # (since we pool throughout all frequency afterwards)
@@ -466,6 +464,7 @@ if __name__ == '__main__':
 
     if not config['load_extracted_features']: 
 
+
         print('Set file name (unique identifier) for the experiment..')
 
         if config['features_type'] == 'MFCC':
@@ -474,11 +473,11 @@ if __name__ == '__main__':
         elif config['features_type'] == 'CNN':
             experiment_name = str(config['experiment_name']) + '_CNN_' + str(config['CNN']['n_mels']) \
                 + '_' + str(config['CNN']['n_frames']) + '_' + str(config['CNN']['batch_size']) \
-                + '_' + str(config['CNN']['is_train']) + '_' + str(config['CNN']['architecture']) \
-                + '_' + str(config['CNN']['num_filters']) + '_' + str(config['CNN']['selected_features_list']) \
-                + '_'+ str(int(time.time()))
+                + '_' + str(config['CNN']['architecture']) + '_' + str(config['CNN']['num_filters']) \
+                + '_' + str(config['CNN']['selected_features_list']) + '_'+ str(int(time.time()))
 
         print(experiment_name)
+
 
         print('Extracting features..')
 
@@ -532,7 +531,10 @@ if __name__ == '__main__':
     #------------#
 
     svc = SVC()
-    svm_hps = GridSearchCV(svc, svm_params, cv=10, n_jobs=3, pre_dispatch=3*8).fit(x, y)
+    if config['debug']:
+        svm_hps = GridSearchCV(svc, svm_params, cv=2, n_jobs=3, pre_dispatch=3*8).fit(x, y)
+    else:
+        svm_hps = GridSearchCV(svc, svm_params, cv=10, n_jobs=3, pre_dispatch=3*8).fit(x, y)
 
     print('Storing extracted features..')        
 
@@ -551,3 +553,4 @@ if __name__ == '__main__':
 # NOTES ON SPECTROGRAM. Mel power spectrogram. Sampling rate: 12k. fmin=0 and fmax=6000. Using shorter clips.
 
 # IDEAS. Check statistics of input data (zero-mean/one-var)?
+#      . Only store mean values for features?
