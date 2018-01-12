@@ -9,26 +9,31 @@ import os
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import classification_report
 from sklearn.cross_validation import PredefinedSplit
+import datasets
 
 
 config = {
     'debug': False,
 
     'experiment_name': 'v0',
-    'features_type': 'MFCC', # CNN or MFCC
+    'features_type': 'CNN', # CNN or MFCC
 
     'load_extracted_features': False,
     'audio_path': '/mnt/vmdata/users/jpons/GTZAN/',
-    'audios_list': '/mnt/vmdata/users/jpons/GTZAN_no_partitions_random/list_random.txt',
     'save_extracted_features_folder': '../data/GTZAN/features/', 
     'results_folder': '../data/GTZAN/results/',
-   
+    'train_set_list': '/homedtic/jpons/GTZAN_partitions/train_filtered.txt',
+    'val_set_list': '/homedtic/jpons/GTZAN_partitions/valid_filtered.txt',
+    'test_set_list': '/homedtic/jpons/GTZAN_partitions/test_filtered.txt',
+    'audios_list': False, 
+    # set 'audios_list' to False to specify partitions in 'train/val/test_set_list'
+    
     'sampling_rate': 12000,
 
     'CNN': {
         'n_mels': 96,
         'n_frames': 1404, # GTZAN: 1404, old: 1360
-        'batch_size': 10,
+        'batch_size': 5,
 
         #'architecture': 'cnn_small_filters',
         #'num_filters': 717, # 717, 90 or 32
@@ -42,7 +47,12 @@ config = {
 
 if config['debug']:
     config['audio_path'] = '/mnt/vmdata/users/jpons/GTZAN_debug/'
-    config['audios_list'] = '/mnt/vmdata/users/jpons/GTZAN_debug_partitions/list.txt'
+    if config['audios_list'] == False:
+        config['train_set_list'] = '/mnt/vmdata/users/jpons/GTZAN_debug_partitions/train_filtered.txt'
+        config['val_set_list'] = '/mnt/vmdata/users/jpons/GTZAN_debug_partitions/valid_filtered.txt'
+        config['test_set_list'] = '/mnt/vmdata/users/jpons/GTZAN_debug_partitions/test_filtered.txt'
+    else:
+        config['audios_list'] = '/mnt/vmdata/users/jpons/GTZAN_debug_partitions/list.txt'
 
 svm_params = [
 
@@ -74,14 +84,13 @@ def iterate_minibatches(prefix, audio_paths_list, batchsize):
         for i in range(start_i,start_i + batchsize,1):
             file_path = prefix + audio_paths_list[i]
             file_path = file_path[:-1] # remove /n
-            tag = audio_paths_list[i][:audio_paths_list[i].rfind('/')]
             print(str(i) + ': ' + file_path)
             if first:
                 data = compute_spectrogram(file_path,config['sampling_rate'])
                 first = False
             else:
                 data = np.append(data,compute_spectrogram(file_path,config['sampling_rate']), axis=0)
-            ground_truth.append(gtzan_ground_truth(tag))
+            ground_truth.append(datasets.gtzan_path2gt(file_path))
         yield data, ground_truth
 
     if leftover:
@@ -90,14 +99,13 @@ def iterate_minibatches(prefix, audio_paths_list, batchsize):
         for i in range(start_i + batchsize, start_i + batchsize + n_leftover,1):
             file_path = prefix + audio_paths_list[i]
             file_path = file_path[:-1] # remove /n
-            tag = audio_paths_list[i][:audio_paths_list[i].rfind('/')]
             print(str(i) + ': ' + file_path)
             if first:
                 data = compute_spectrogram(file_path,config['sampling_rate'])
                 first = False
             else:
                 data = np.append(data,compute_spectrogram(file_path,config['sampling_rate']), axis=0)
-            ground_truth.append(gtzan_ground_truth(tag))
+            ground_truth.append(datasets.gtzan_path2gt(file_path))
         yield data, ground_truth
 
 
@@ -133,9 +141,10 @@ def format_cnn_data(prefix, list_audios):
 
 
 def compute_spectrogram(audio_path, sampling_rate):
-    # compute spectrogram
-    audio, sr = librosa.load(audio_path, sr=sampling_rate)
-    audio_rep = librosa.feature.melspectrogram(y=audio,
+    try:
+        # compute spectrogram
+        audio, sr = librosa.load(audio_path, sr=sampling_rate)
+        audio_rep = librosa.feature.melspectrogram(y=audio,
                                                sr=sampling_rate,
                                                hop_length=256,
                                                n_fft=512,
@@ -144,12 +153,14 @@ def compute_spectrogram(audio_path, sampling_rate):
                                                fmin=0.0,
                                                fmax=6000.0).T
 
-    # normalize audio representation
-    print(audio_rep.shape)
-    audio_rep = librosa.core.logamplitude(audio_rep)
-    audio_rep = np.expand_dims(audio_rep, axis=0)
-    audio_rep = audio_rep[:, :config['CNN']['n_frames'], :] # cropping signal to n_frames
-    return audio_rep
+        # normalize audio representation
+        print(audio_rep.shape)
+        audio_rep = librosa.core.logamplitude(audio_rep)
+        audio_rep = np.expand_dims(audio_rep, axis=0)
+        audio_rep = audio_rep[:, :config['CNN']['n_frames'], :] # cropping signal to n_frames
+        return audio_rep
+    except:
+        import ipdb; ipdb.set_trace()
 
 def cnn_small_filters():
 
@@ -222,7 +233,7 @@ def cnn_music():
    
     # remove some temporal filters to have the same ammount of timbral and temporal filters
     if config['CNN']['num_filters'] == 256:
-        remove = 64
+        remove = 64  
     elif config['CNN']['num_filters'] == 128:
         remove = 32    
     elif config['CNN']['num_filters'] == 64:
@@ -396,35 +407,6 @@ def select_cnn_feature_layers(feature_maps, selected_features_list):
     return selected_features
 
 
-# GTZAN
-
-def gtzan_ground_truth(ground_truth):
-
-    if ground_truth == 'blues':
-        return 0
-    elif ground_truth == 'classical':
-        return 1
-    elif ground_truth == 'country':
-        return 2
-    elif ground_truth == 'disco':
-        return 3
-    elif ground_truth == 'hiphop':
-        return 4
-    elif ground_truth == 'jazz':
-        return 5
-    elif ground_truth == 'metal':
-        return 6
-    elif ground_truth == 'pop':
-        return 7
-    elif ground_truth == 'reggae':
-        return 8
-    elif ground_truth == 'rock':
-        return 9
-    else:
-        print('Warning: did not find the corresponding ground truth (' + str(ground_truth) + ').')
-        import ipdb; ipdb.set_trace()
-
-
 # MFCCs
 
 def extract_mfcc_features(audio, sampling_rate=12000): 
@@ -449,7 +431,9 @@ def format_mfcc_data(prefix, list_audios):
         ground_truth = song[:song.rfind('/')]
         print(str(n_song) + ': ' + song[:-1])
         X.append(extract_mfcc_features(prefix + song[:-1], config['sampling_rate']))
-        Y.append(gtzan_ground_truth(ground_truth))
+        #import ipdb; ipdb.set_trace()
+        Y.append(datasets.gtzan_path2gt(song)) #datasets.gtzan_path2gt(file_path)
+        #Y.append(gtzan_ground_truth(ground_truth)) #datasets.gtzan_path2gt(file_path)
         n_song += 1
         print(Y)
         print(np.array(X).shape)
@@ -466,93 +450,143 @@ if __name__ == '__main__':
 
     if not config['load_extracted_features']: 
 
-
         print('Set file name (unique identifier) for the experiment..')
-
         if config['features_type'] == 'MFCC':
             experiment_name = str(config['experiment_name']) + '_MFCC_' + str(int(time.time()))
-
         elif config['features_type'] == 'CNN':
             experiment_name = str(config['experiment_name']) + '_CNN_' + str(config['CNN']['n_mels']) \
                 + '_' + str(config['CNN']['n_frames']) + '_' + str(config['CNN']['batch_size']) \
                 + '_' + str(config['CNN']['architecture']) + '_' + str(config['CNN']['num_filters']) \
                 + '_' + str(config['CNN']['selected_features_list']) + '_'+ str(int(time.time()))
-
         print(experiment_name)
 
 
         print('Extracting features..')
-
         if config['features_type'] == 'CNN':
-
             if config['CNN']['architecture'] == 'cnn_small_filters':
                 features_definition = cnn_small_filters()
             elif config['CNN']['architecture'] == 'cnn_music':
                 features_definition = cnn_music()
-
             print('Number of parameters of the model: ' + str(
                    count_params(tf.trainable_variables()))+'\n')
-
-            x, y = format_cnn_data(prefix=config['audio_path'],
-                                    list_audios=config['audios_list'])
+            if config['audios_list'] == False:
+                print('Extract features for train-set..')
+                x_train, y_train = format_cnn_data(prefix=config['audio_path'],
+                                     list_audios=config['train_set_list'])
+                print('Extract features for val-set..')
+                x_val, y_val = format_cnn_data(prefix=config['audio_path'],
+                                 list_audios=config['val_set_list'])
+                print('Extract features for test-set..')
+                x_test, y_test = format_cnn_data(prefix=config['audio_path'],
+                                   list_audios=config['test_set_list'])
+            else:
+                x, y = format_cnn_data(prefix=config['audio_path'],
+                         list_audios=config['audios_list'])
 
         elif config['features_type'] == 'MFCC':
-
-            x, y = format_mfcc_data(prefix=config['audio_path'],
-                                    list_audios=config['audios_list'])
+            if config['audios_list'] == False:
+                print('Extract features for train-set..')
+                x_train, y_train = format_mfcc_data(prefix=config['audio_path'],
+                                     list_audios=config['train_set_list'])
+                print('Extract features for val-set..')
+                x_val, y_val = format_mfcc_data(prefix=config['audio_path'],
+                                 list_audios=config['val_set_list'])
+                print('Extract features for test-set..')
+                x_test, y_test = format_mfcc_data(prefix=config['audio_path'],
+                                   list_audios=config['test_set_list'])
+            else:
+                x, y = format_mfcc_data(prefix=config['audio_path'],
+                         list_audios=config['audios_list'])
 
 
         print('Storing extracted features..')        
-
         if not os.path.exists(config['save_extracted_features_folder']):
             os.makedirs(config['save_extracted_features_folder'])
 
-        with open(config['save_extracted_features_folder'] + experiment_name + '.pkl', 'wb') as f:
-            pickle.dump([x, y, config], f)
+        if config['audios_list'] == False:
+            with open(config['save_extracted_features_folder'] + experiment_name + '.pkl', 'wb') as f:
+                pickle.dump([x_train, y_train, x_val, y_val, x_test, y_test], f)
+        else:
+            with open(config['save_extracted_features_folder'] + experiment_name + '.pkl', 'wb') as f:
+                pickle.dump([x, y, config], f)            
 
     else:  # load extracted features
         
         print('Loading features: ' + config['load_extracted_features'])
 
-        with open(config['load_extracted_features'], 'rb') as f:
-            x, y, config = pickle.load(f)
-
+        if config['audios_list'] == False:
+            with open(config['load_extracted_features'], 'rb') as f:
+                x_train, y_train, x_val, y_val, x_test, y_test = pickle.load(f)
+        else:
+            with open(config['load_extracted_features'], 'rb') as f:
+                x, y, config = pickle.load(f)
 
     if config['features_type'] == 'CNN':
 
         print('Select CNN features..')
 
-        x = select_cnn_feature_layers(x, config['CNN']['selected_features_list'])
-
-
-    print('Data size (data points, feature vector)..')
-    print(np.array(x).shape)
+        print('Data size (data points, feature vector)..')
+        if config['audios_list'] == False:
+            x_train = select_cnn_feature_layers(x_train, config['CNN']['selected_features_list'])
+            x_val = select_cnn_feature_layers(x_val, config['CNN']['selected_features_list'])
+            x_test = select_cnn_feature_layers(x_test, config['CNN']['selected_features_list'])
+            print(np.array(x_train).shape)
+            print(np.array(x_val).shape)
+            print(np.array(x_test).shape)
+        else:
+            x = select_cnn_feature_layers(x, config['CNN']['selected_features_list'])
+            print(np.array(x).shape)
 
     #------------#
     # CLASSIFIER #
     #------------#
 
-    svc = SVC()
-    if config['debug']:
-        svm_hps = GridSearchCV(svc, svm_params, cv=2, n_jobs=3, pre_dispatch=3*8).fit(x, y)
-        print('2 fold validation!')
-    else:
-        svm_hps = GridSearchCV(svc, svm_params, cv=10, n_jobs=3, pre_dispatch=3*8).fit(x, y)
-        print('10 fold validation!')
-
-    print('Storing extracted features..')        
-
     if not os.path.exists(config['results_folder']):
         os.makedirs(config['results_folder'])
 
     f = open(config['results_folder'] + experiment_name + '.txt','w')
-    f.write('Best score of' + str(svm_hps.best_score_) + ':' + str(svm_hps.best_params_))
-    f.write(str(config))
-    f.close()
 
-    print('Best score of {}: {}'.format(svm_hps.best_score_,svm_hps.best_params_))
-    print(svm_hps.best_score_)
-    print(config)
+    if config['audios_list'] == False:
+        x_dev = np.concatenate((x_train, x_val), axis=0)
+        y_dev = np.concatenate((y_train, y_val), axis=0)
+        val_mask = np.concatenate((-np.ones(len(y_train)), np.zeros(len(y_val))), axis=0)
+        ps = PredefinedSplit(test_fold=val_mask)
+        svc = SVC()
+        hps = GridSearchCV(svc, svm_params, cv=ps, n_jobs=3, pre_dispatch=3*8).fit(x_dev, y_dev)
+        svm = SVC()
+        svm.set_params(**hps.best_params_)
+        svm.fit(x_train, y_train)
+        y_true, y_pred = y_test, svm.predict(x_test)
+        print('Detailed classification report:')
+        print(classification_report(y_true, y_pred))
+        print('Accuracy test set: ')
+        print(accuracy_score(y_test, svm.predict(x_test)))
+        print(config)
+
+        print('Storing results..')   
+        f.write(str(classification_report(y_true, y_pred)))     
+        f.write('Accuracy: ' + str(accuracy_score(y_test, svm.predict(x_test))) + '\n')
+        f.write(str(config))
+
+    else:
+        svc = SVC()
+        if config['debug']:
+            svm = GridSearchCV(svc, svm_params, cv=2, n_jobs=3, pre_dispatch=3*8).fit(x, y)
+            print('[DEBUG MODE] 2 fold cross-validation!')
+        else:
+            svm = GridSearchCV(svc, svm_params, cv=10, n_jobs=3, pre_dispatch=3*8).fit(x, y)
+            print('10 fold cross-validation!')
+
+        print('Best score of {}: {}'.format(svm.best_score_,svm.best_params_))
+        print(svm.best_score_)
+        print(config)
+
+        print('Storing results..')        
+
+        f.write('Best score of ' + str(svm.best_score_) + ': ' + str(svm.best_params_))
+        f.write(str(config))
+
+    f.close()
 
 # NOTES ON SPECTROGRAM. Mel power spectrogram. Sampling rate: 12k. fmin=0 and fmax=6000. Using shorter clips.
 
