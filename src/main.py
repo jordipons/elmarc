@@ -17,35 +17,57 @@ config = {
 
     'experiment_name': 'v0',
     'features_type': 'CNN', # CNN or MFCC
-
+    'dataset': 'Extended Ballroom',
     'load_extracted_features': False,
-    'audio_path': '/mnt/vmdata/users/jpons/GTZAN/',
-    'save_extracted_features_folder': '../data/GTZAN/features/', 
-    'results_folder': '../data/GTZAN/results/',
-    'train_set_list': '/homedtic/jpons/GTZAN_partitions/train_filtered.txt',
-    'val_set_list': '/homedtic/jpons/GTZAN_partitions/valid_filtered.txt',
-    'test_set_list': '/homedtic/jpons/GTZAN_partitions/test_filtered.txt',
-    'audios_list': False, 
-    # set 'audios_list' to False to specify partitions in 'train/val/test_set_list'
+
+    # EXTENDED BALLROOM
+    'audio_path': '/mnt/vmdata/users/jpons/extended_ballroom/',
+    'save_extracted_features_folder': '../data/Extended_Ballroom/features/', 
+    'results_folder': '../data/Extended_Ballroom/results/',
+    'train_set_list': None,
+    'val_set_list': None,
+    'test_set_list': None,
+    'audios_list': '/mnt/vmdata/users/jpons/extended_ballroom/all_files.txt', 
+    # set 'audios_list' to FALSE to specify partitions in 'train/val/test_set_list'
+
+    # BALLROOM
+    #'audio_path': '/homedtic/jpons/ballroom/BallroomData/',
+    #'save_extracted_features_folder': '../data/Ballroom/features/', 
+    #'results_folder': '../data/Ballroom/results/',
+    #'train_set_list': None,
+    #'val_set_list': None,
+    #'test_set_list': None,
+    #'audios_list': '/homedtic/jpons/ballroom/allBallroomFiles.txt', 
+    # set 'audios_list' to FALSE to specify partitions in 'train/val/test_set_list'
+
+    # GTZAN
+    #'audio_path': '/mnt/vmdata/users/jpons/GTZAN/',
+    #'save_extracted_features_folder': '../data/GTZAN/features/', 
+    #'results_folder': '../data/GTZAN/results/',
+    #'train_set_list': '/homedtic/jpons/GTZAN_partitions/train_filtered.txt',
+    #'val_set_list': '/homedtic/jpons/GTZAN_partitions/valid_filtered.txt',
+    #'test_set_list': '/homedtic/jpons/GTZAN_partitions/test_filtered.txt',
+    #'audios_list': False, 
+    # set 'audios_list' to FALSE to specify partitions in 'train/val/test_set_list'
     
     'sampling_rate': 12000,
 
     'CNN': {
         'n_mels': 96,
-        'n_frames': 1404, # GTZAN: 1404, old: 1360
+        'n_frames': 1376, # GTZAN: 1404, old: 1360  ## BALLROOM: 1376
         'batch_size': 5,
 
         #'architecture': 'cnn_small_filters',
-        #'num_filters': 717, # 717, 90 or 32
+        #'num_filters': 32, # 717, 90 or 32
         #'selected_features_list': [0, 1, 2, 3, 4]
 
         'architecture': 'cnn_music',
-        'num_filters': 256, # 128, 64, 32, 16, 8 or 4
-        'selected_features_list': [1] # timbral [0], temporal [1] or both [0, 1]
-    },
+        'num_filters': 256, # 256, 128, 64, 32, 16, 8 or 4
+        'selected_features_list': [0] # timbral [0], temporal [1] or both [0, 1]
+    }
 }
 
-if config['debug']:
+if config['debug'] and config['dataset']=='GTZAN':
     config['audio_path'] = '/mnt/vmdata/users/jpons/GTZAN_debug/'
     if config['audios_list'] == False:
         config['train_set_list'] = '/mnt/vmdata/users/jpons/GTZAN_debug_partitions/train_filtered.txt'
@@ -90,7 +112,7 @@ def iterate_minibatches(prefix, audio_paths_list, batchsize):
                 first = False
             else:
                 data = np.append(data,compute_spectrogram(file_path,config['sampling_rate']), axis=0)
-            ground_truth.append(datasets.gtzan_path2gt(file_path))
+            ground_truth.append(datasets.path2gt(file_path, config['dataset']))
         yield data, ground_truth
 
     if leftover:
@@ -105,7 +127,7 @@ def iterate_minibatches(prefix, audio_paths_list, batchsize):
                 first = False
             else:
                 data = np.append(data,compute_spectrogram(file_path,config['sampling_rate']), axis=0)
-            ground_truth.append(datasets.gtzan_path2gt(file_path))
+            ground_truth.append(datasets.path2gt(file_path, config['dataset']))
         yield data, ground_truth
 
 
@@ -432,8 +454,7 @@ def format_mfcc_data(prefix, list_audios):
         print(str(n_song) + ': ' + song[:-1])
         X.append(extract_mfcc_features(prefix + song[:-1], config['sampling_rate']))
         #import ipdb; ipdb.set_trace()
-        Y.append(datasets.gtzan_path2gt(song)) #datasets.gtzan_path2gt(file_path)
-        #Y.append(gtzan_ground_truth(ground_truth)) #datasets.gtzan_path2gt(file_path)
+        Y.append(datasets.path2gt(song, config['dataset']))
         n_song += 1
         print(Y)
         print(np.array(X).shape)
