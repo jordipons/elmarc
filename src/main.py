@@ -1,97 +1,18 @@
 import numpy as np
-from sklearn.svm import SVC
-from sklearn.metrics import accuracy_score
 import tensorflow as tf
 import librosa
 import pickle
 import time
 import os
+import datasets
+import pandas as pd
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import classification_report
 from sklearn.cross_validation import PredefinedSplit
-import datasets
-import pandas as pd
-
-
-config = {
-
-    #'dataset': 'Extended Ballroom',
-    #'audio_path': '/mnt/vmdata/users/jpons/extended_ballroom/',
-    #'save_extracted_features_folder': '../data/Extended_Ballroom/features/', 
-    #'results_folder': '../data/Extended_Ballroom/results/',
-    #'train_set_list': None,
-    #'val_set_list': None,
-    #'test_set_list': None,
-    #'audios_list': '/mnt/vmdata/users/jpons/extended_ballroom/all_files.txt', 
-    # set 'audios_list' to FALSE to specify partitions in 'train/val/test_set_list'
-    #'fix_length_by': 'zero-pad', # 'zero-pad', 'repeat-pad' or 'crop'
-
-    #'dataset': 'Ballroom',
-    #'audio_path': '/homedtic/jpons/ballroom/BallroomData/',
-    #'save_extracted_features_folder': '../data/Ballroom/features/', 
-    #'results_folder': '../data/Ballroom/results/',
-    #'train_set_list': None,
-    #'val_set_list': None,
-    #'test_set_list': None,
-    #'audios_list': '/homedtic/jpons/ballroom/allBallroomFiles.txt', 
-    # set 'audios_list' to FALSE to specify partitions in 'train/val/test_set_list'
-    #'fix_length_by': 'zero-pad', # 'zero-pad', 'repeat-pad' or 'crop'
-
-    #'dataset': 'GTZAN',
-    #'audio_path': '/data/GTZAN/',
-    #'save_extracted_features_folder': '../data/GTZAN/features/', 
-    #'results_folder': '../data/GTZAN/results/',
-    #'train_set_list': '/home/jpons/GTZAN_partitions/train_filtered.txt',
-    #'val_set_list': '/home/jpons/GTZAN_partitions/valid_filtered.txt',
-    #'test_set_list': '/home/jpons/GTZAN_partitions/test_filtered.txt',
-    #'audios_list': False, 
-    # set 'audios_list' to FALSE to specify partitions in 'train/val/test_set_list'
-    #'fix_length_by': 'zero-pad', # 'zero-pad', 'repeat-pad' or 'crop'
-
-    'dataset': 'UrbanSound8K',
-    'audio_path': '/data/UrbanSound8K/',
-    'save_extracted_features_folder': '../data/UrbanSound8K/features/', 
-    'results_folder': '../data/UrbanSound8K/results/',
-    'train_set_list': None,
-    'val_set_list': None,
-    'test_set_list': None,
-    'audios_list': '/data/UrbanSound8K/allFiles.txt', 
-    # set 'audios_list' to FALSE to specify partitions in 'train/val/test_set_list'
-    'fix_length_by': 'repeat-pad', # 'zero-pad', 'repeat-pad', 'crop' or False
-
-    'debug': False,
-    'sampling_rate': 12000,
-    'experiment_name': 'v0',
-    'features_type': 'MFCC', # CNN or MFCC
-    'load_extracted_features': False,
-
-    'CNN': {
-        'n_mels': 96,
-        'n_frames': 188, # GTZAN: 1404, old: 1360  ## BALLROOM: 1376  ### US8K: 100
-        'batch_size': 5,
-
-        #'architecture': 'cnn_small_filters',
-        #'num_filters': 32, # 717, 90 or 32
-        #'selected_features_list': [0, 1, 2, 3, 4]
-
-        'architecture': 'cnn_music',
-        'num_filters': 4, # 256, 128, 64, 32, 16, 8 or 4
-        'selected_features_list': [0,1] # timbral [0], temporal [1] or both [0, 1]
-    },
-    'MFCC': {
-        'number': 20,
-        'fixed_length': 2048
-    }
-}
-
-if config['debug'] and config['dataset']=='GTZAN':
-    config['audio_path'] = '/home/jpons/GTZAN_debug/'
-    if config['audios_list'] == False:
-        config['train_set_list'] = '/home/jpons/GTZAN_debug_partitions/train_filtered.txt'
-        config['val_set_list'] = '/home/jpons/GTZAN_debug_partitions/valid_filtered.txt'
-        config['test_set_list'] = '/home/jpons/GTZAN_debug_partitions/test_filtered.txt'
-    else:
-        config['audios_list'] = '/home/jpons/GTZAN_debug_partitions/list.txt'
+from config_file import config_main
+config = config_main
 
 svm_params = [
 
@@ -103,7 +24,6 @@ svm_params = [
      'C': [0.1, 2.0, 8.0, 32.0]}
 
 ]
-
 
 # CNNs
 
@@ -179,9 +99,9 @@ def format_cnn_data(prefix, list_audios):
             X.append(tmp_features)
             Y.append(batch[1][j]) 
             ID.append(batch[2][j])
-        print(Y)
-        print(np.array(X).shape)
-        print(np.array(ID).shape)
+        print('Annotations: ' + str(Y))
+        print('Shape X: ' + str(np.array(X).shape))
+        print('# IDs: ' + str(np.array(ID).shape[0]))
 
     return X, Y, ID
 
@@ -204,22 +124,26 @@ def compute_spectrogram(audio_path, sampling_rate):
         src = librosa.core.logamplitude(audio_rep)
 
         # zero-pad, repeat-pad and corpping are different in CNNs for having fixed-lengths patches in CNNs
-        if config['fix_length_by'] == 'zero-pad' and len(src) < config['CNN']['n_frames']:
-            print('Zero padding!')
-            src_zeros = np.zeros((config['CNN']['n_frames'],config['CNN']['n_mels']))
-            src_zeros[:len(src)] = src
-            src = src_zeros
+        if len(src) < config['CNN']['n_frames']:
+            if config['fix_length_by'] == 'zero-pad':
+                print('Zero padding!')
+                import time; time.sleep(1)
+                src_zeros = np.zeros((config['CNN']['n_frames'],config['CNN']['n_mels']))
+                src_zeros[:len(src)] = src
+                src = src_zeros
 
-        elif config['fix_length_by'] == 'repeat-pad' and len(src) < config['CNN']['n_frames']:
-            print('Repeat and crop to the fixed_length!')
-            src_repeat = src
-            while (src_repeat.shape[0] < config['CNN']['n_frames']):
-                src_repeat = np.concatenate((src_repeat, src), axis=0)    
-            src = src_repeat
-            src = src[:config['CNN']['n_frames'], :]
+            elif config['fix_length_by'] == 'repeat-pad' and len(src) < config['CNN']['n_frames']:
+                print('Repeat and crop to the fixed_length!')
+                import time; time.sleep(1)
+                src_repeat = src
+                while (src_repeat.shape[0] < config['CNN']['n_frames']):
+                    src_repeat = np.concatenate((src_repeat, src), axis=0)    
+                src = src_repeat
+                src = src[:config['CNN']['n_frames'], :]
 
-        elif config['fix_length_by'] == 'crop':
+        elif len(src) > config['CNN']['n_frames']:
             print('Cropping audio!')
+            import time; time.sleep(1)
             src = src[:config['CNN']['n_frames'], :]
 
         audio_rep = np.expand_dims(src, axis=0) # let the tensor be
@@ -480,23 +404,17 @@ def extract_mfcc_features(audio, sampling_rate=12000):
     # zero-pad, repeat-pad and corpping are different in CNNs for having fixed-lengths patches in CNNs
     if config['fix_length_by'] == 'zero-pad' and len(src) < config['MFCC']['fixed_length']:
         print('Zero padding!')
-        import time
-        time.sleep(60)
         src_zeros = np.zeros(config['MFCC']['fixed_length']) # min length to have 3-frame mfcc's
         src_zeros[:len(src)] = src
         src = src_zeros
     elif config['fix_length_by'] == 'repeat-pad' and len(src) < config['MFCC']['fixed_length']:
         print('Repeat padding!')
-        import time
-        time.sleep(60)
         src_repeat = src
         while (len(src_repeat) < config['MFCC']['fixed_length']):
             src_repeat = np.concatenate((src_repeat, src), axis=0)    
         src = src_repeat
     elif config['fix_length_by'] == 'crop':
-        print('Copping audio!')
-        import time
-        time.sleep(60)
+        print('Cropping audio!')
         src = src[:config['MFCC']['fixed_length']]
 
     print(len(src))
@@ -691,12 +609,8 @@ if __name__ == '__main__':
 
     else:
         svc = SVC()
-        if config['debug']:
-            svm = GridSearchCV(svc, svm_params, cv=2, n_jobs=3, pre_dispatch=3*8).fit(x, y)
-            print('[DEBUG MODE] 2 fold cross-validation!')
-        else:
-            svm = GridSearchCV(svc, svm_params, cv=10, n_jobs=3, pre_dispatch=3*8).fit(x, y)
-            print('10 fold cross-validation!')
+        svm = GridSearchCV(svc, svm_params, cv=10, n_jobs=3, pre_dispatch=3*8).fit(x, y)
+        print('10 fold cross-validation!')
 
         print('Best score of {}: {}'.format(svm.best_score_,svm.best_params_))
         print(svm.best_score_)
