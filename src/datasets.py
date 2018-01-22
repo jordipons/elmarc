@@ -1,3 +1,5 @@
+import pandas as pd
+
 def path2gt(file_path, dataset):
 
     if dataset == 'GTZAN':
@@ -8,6 +10,9 @@ def path2gt(file_path, dataset):
 
     elif dataset == 'Extended Ballroom':
         return extended_ballroom_path2gt(file_path)
+
+    elif dataset == 'UrbanSound8K':
+        return urban_sound_path2gt(file_path)
 
     else:
         import ipdb; ipdb.set_trace()
@@ -107,3 +112,13 @@ def extended_ballroom_path2gt(file_path):
     else:
         print('Warning: did not find the corresponding ground truth (' + str(tag) + ').')
         import ipdb; ipdb.set_trace()
+
+# URBAN SOUND 8K
+
+def urban_sound_path2gt(file_path):
+
+    tag = file_path[file_path.rfind('/')+1:]
+    print(tag)
+    df = pd.read_csv('/data/UrbanSound8K/metadata/UrbanSound8K.csv')
+    #import ipdb; ipdb.set_trace()
+    return int(df[df.slice_file_name==tag].classID)
