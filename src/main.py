@@ -5,6 +5,7 @@ import pickle
 import time
 import os
 import datasets
+import dl_models
 import pandas as pd
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
@@ -25,14 +26,17 @@ svm_params = [
 
 ]
 
-# CNNs
+
+#------#
+# CNNs #
+#------#
 
 def count_params(trainable_variables):
     "Return number of trainable variables, specifically: tf.trainable_variables()"
     return np.sum([np.prod(v.get_shape().as_list()) for v in trainable_variables])
 
-def iterate_minibatches(prefix, audio_paths_list, batchsize):
 
+def iterate_minibatches(prefix, audio_paths_list, batchsize):
     total_size = len(audio_paths_list)
     n_leftover = int(total_size % batchsize)
     leftover = n_leftover != 0
@@ -102,15 +106,13 @@ def format_cnn_data(prefix, list_audios):
         print('Annotations: ' + str(Y))
         print('Shape X: ' + str(np.array(X).shape))
         print('# IDs: ' + str(np.array(ID).shape[0]))
-
     return X, Y, ID
 
 
 def compute_spectrogram(audio_path, sampling_rate):
-    try:
-        # compute spectrogram
-        audio, sr = librosa.load(audio_path, sr=sampling_rate)
-        audio_rep = librosa.feature.melspectrogram(y=audio,
+    # compute spectrogram
+    audio, sr = librosa.load(audio_path, sr=sampling_rate)
+    audio_rep = librosa.feature.melspectrogram(y=audio,
                                                sr=sampling_rate,
                                                hop_length=256,
                                                n_fft=512,
@@ -118,269 +120,31 @@ def compute_spectrogram(audio_path, sampling_rate):
                                                power=2,
                                                fmin=0.0,
                                                fmax=6000.0).T
+    # normalize audio representation
+    print(audio_rep.shape)
+    src = librosa.core.logamplitude(audio_rep)
+    
+    # zero-pad, repeat-pad and corpping are different in CNNs for having fixed-lengths patches in CNNs
+    if len(src) < config['CNN']['n_frames']:
+        if config['fix_length_by'] == 'zero-pad':
+            print('Zero padding!')
+            src_zeros = np.zeros((config['CNN']['n_frames'],config['CNN']['n_mels']))
+            src_zeros[:len(src)] = src
+            src = src_zeros
 
-        # normalize audio representation
-        print(audio_rep.shape)
-        src = librosa.core.logamplitude(audio_rep)
-
-        # zero-pad, repeat-pad and corpping are different in CNNs for having fixed-lengths patches in CNNs
-        if len(src) < config['CNN']['n_frames']:
-            if config['fix_length_by'] == 'zero-pad':
-                print('Zero padding!')
-                src_zeros = np.zeros((config['CNN']['n_frames'],config['CNN']['n_mels']))
-                src_zeros[:len(src)] = src
-                src = src_zeros
-
-            elif config['fix_length_by'] == 'repeat-pad' and len(src) < config['CNN']['n_frames']:
-                print('Repeat and crop to the fixed_length!')
-                src_repeat = src
-                while (src_repeat.shape[0] < config['CNN']['n_frames']):
-                    src_repeat = np.concatenate((src_repeat, src), axis=0)    
-                src = src_repeat
-                src = src[:config['CNN']['n_frames'], :]
-
-        elif len(src) > config['CNN']['n_frames']:
-            print('Cropping audio!')
+        elif config['fix_length_by'] == 'repeat-pad' and len(src) < config['CNN']['n_frames']:
+            print('Repeat and crop to the fixed_length!')
+            src_repeat = src
+            while (src_repeat.shape[0] < config['CNN']['n_frames']):
+                src_repeat = np.concatenate((src_repeat, src), axis=0)    
+            src = src_repeat
             src = src[:config['CNN']['n_frames'], :]
-
-        audio_rep = np.expand_dims(src, axis=0) # let the tensor be
-        return audio_rep
-    except:
-        import ipdb; ipdb.set_trace()
-
-def cnn_small_filters():
-
-    with tf.name_scope('cnn_as_choi'):
-        global x_in
-        x_in = tf.placeholder(tf.float32, [None, None, config['CNN']['n_mels']])
-
-        print('Input: ' + str(x_in.get_shape))
-
-        input_layer = tf.reshape(x_in,[-1, config['CNN']['n_frames'], config['CNN']['n_mels'], 1])
-        conv1 = tf.layers.conv2d(inputs=input_layer,
-                                 filters=config['CNN']['num_filters'],
-                                 kernel_size=[3, 3],
-                                 padding='same',
-                                 activation=tf.nn.elu,
-                                 name='1CNN',
-                                 kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-        pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[4, 2], strides=[4, 2])
-
-        conv2 = tf.layers.conv2d(inputs=pool1,
-                                 filters=config['CNN']['num_filters'],
-                                 kernel_size=[3, 3],
-                                 padding='same',
-                                 activation=tf.nn.elu,
-                                 name='2CNN',
-                                 kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-        pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size=[4, 3], strides=[4, 3])
-
-        conv3 = tf.layers.conv2d(inputs=pool2,
-                                 filters=config['CNN']['num_filters'],
-                                 kernel_size=[3, 3],
-                                 padding='same',
-                                 activation=tf.nn.elu,
-                                 name='3CNN',
-                                 kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-        pool3 = tf.layers.max_pooling2d(inputs=conv3, pool_size=[5, 2], strides=[5, 2])
-
-        conv4 = tf.layers.conv2d(inputs=pool3,
-                                 filters=config['CNN']['num_filters'],
-                                 kernel_size=[3, 3],
-                                 padding='same',
-                                 activation=tf.nn.elu,
-                                 name='4CNN',
-                                 kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-        pool4 = tf.layers.max_pooling2d(inputs=conv4, pool_size=[4, 2], strides=[4, 2])
-
-        conv5 = tf.layers.conv2d(inputs=pool4, 
-                                 filters=config['CNN']['num_filters'], 
-                                 kernel_size=[3, 3], 
-                                 padding='same', 
-                                 activation=tf.nn.elu,
-                                 name='5CNN', 
-                                 kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-        pool5 = tf.layers.max_pooling2d(inputs=conv5, pool_size=[4, 4], strides=[4, 4])
-
-    global sess
-    sess = tf.InteractiveSession()
-    sess.run(tf.global_variables_initializer())
-
-    print(pool1.get_shape)
-    print(pool2.get_shape)
-    print(pool3.get_shape)
-    print(pool4.get_shape)
-    print(pool5.get_shape)
-
-    return [pool1, pool2, pool3, pool4, pool5]
-
-
-def cnn_music():
-   
-    # remove some temporal filters to have the same ammount of timbral and temporal filters
-    if config['CNN']['num_filters'] == 256:
-        remove = 64  
-    elif config['CNN']['num_filters'] == 128:
-        remove = 32    
-    elif config['CNN']['num_filters'] == 64:
-        remove = 16
-    elif config['CNN']['num_filters'] == 32:
-        remove = 8
-    elif config['CNN']['num_filters'] == 16:
-        remove = 4
-    elif config['CNN']['num_filters'] == 8:
-        remove = 2
-    elif config['CNN']['num_filters'] == 4:
-        remove = 1
-
-    # define the cnn_music model  
-    with tf.name_scope('cnn_music'):
-        global x_in
-        x_in = tf.placeholder(tf.float32, [None, None, config['CNN']['n_mels']])
-
-        print('Input: ' + str(x_in.get_shape))
-
-        input_layer = tf.reshape(x_in, [-1, config['CNN']['n_frames'], config['CNN']['n_mels'], 1])
-
-        # padding only time domain for an efficient 'same' implementation
-        # (since we pool throughout all frequency afterwards)
-        input_pad_7 = tf.pad(input_layer, [[0, 0], [3, 3], [0, 0], [0, 0]], "CONSTANT")
-        input_pad_3 = tf.pad(input_layer, [[0, 0], [1, 1], [0, 0], [0, 0]], "CONSTANT")
-
-        # [TIMBRE] filter shape 1: 7x0.9f
-        conv1 = tf.layers.conv2d(inputs=input_pad_7,
-                             filters=config['CNN']['num_filters'],
-                             kernel_size=[7, int(0.9 * config['CNN']['n_mels'])],
-                             padding="valid",
-                             activation=tf.nn.relu,
-                             kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-        pool1 = tf.layers.max_pooling2d(inputs=conv1,
-                                    pool_size=[1, conv1.shape[2]],
-                                    strides=[1, conv1.shape[2]])
-        p1 = tf.squeeze(pool1, [2])
-
-        # [TIMBRE] filter shape 2: 3x0.9f
-        conv2 = tf.layers.conv2d(inputs=input_pad_3, 
-                             filters=config['CNN']['num_filters']*2,
-                             kernel_size=[3, int(0.9 * config['CNN']['n_mels'])],
-                             padding="valid",
-                             activation=tf.nn.relu,
-                             kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-        pool2 = tf.layers.max_pooling2d(inputs=conv2,
-                                    pool_size=[1, conv2.shape[2]],
-                                    strides=[1, conv2.shape[2]])
-        p2 = tf.squeeze(pool2, [2])
-
-        # [TIMBRE] filter shape 3: 1x0.9f
-        conv3 = tf.layers.conv2d(inputs=input_layer, 
-                             filters=config['CNN']['num_filters']*4,
-                             kernel_size=[1, int(0.9 * config['CNN']['n_mels'])],
-                             padding="valid",
-                             activation=tf.nn.relu,
-                             kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-        pool3 = tf.layers.max_pooling2d(inputs=conv3,
-                                    pool_size=[1, conv3.shape[2]],
-                                    strides=[1, conv3.shape[2]])
-        p3 = tf.squeeze(pool3, [2])
-
-        # [TIMBRE] filter shape 3: 7x0.4f
-        conv4 = tf.layers.conv2d(inputs=input_pad_7,
-                             filters=config['CNN']['num_filters'],
-                             kernel_size=[7, int(0.4 * config['CNN']['n_mels'])],
-                             padding="valid",
-                             activation=tf.nn.relu,
-                             kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-        pool4 = tf.layers.max_pooling2d(inputs=conv4,
-                                    pool_size=[1, conv4.shape[2]],
-                                    strides=[1, conv4.shape[2]])
-        p4 = tf.squeeze(pool4, [2])
-
-        # [TIMBRE] filter shape 5: 3x0.4f
-        conv5 = tf.layers.conv2d(inputs=input_pad_3, 
-                             filters=config['CNN']['num_filters']*2,
-                             kernel_size=[3, int(0.4 * config['CNN']['n_mels'])],
-                             padding="valid",
-                             activation=tf.nn.relu,
-                             kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-        pool5 = tf.layers.max_pooling2d(inputs=conv5, pool_size=[1, conv5.shape[2]],
-                                    strides=[1, conv5.shape[2]])
-        p5 = tf.squeeze(pool5, [2])
-
-        # [TIMBRE] filter shape 6: 1x0.4f
-        conv6 = tf.layers.conv2d(inputs=input_layer, 
-                             filters=config['CNN']['num_filters']*4,
-                             kernel_size=[1, int(0.4 * config['CNN']['n_mels'])], padding="valid",
-                             activation=tf.nn.relu,
-                             kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-        pool6 = tf.layers.max_pooling2d(inputs=conv6, pool_size=[1, conv6.shape[2]],
-                                    strides=[1, conv6.shape[2]])
-        p6 = tf.squeeze(pool6, [2])
-
-        # [TEMPORAL-FEATURES] - average pooling + filter shape 7: 165x1
-        pool7 = tf.layers.average_pooling2d(inputs=input_layer,
-                                        pool_size=[1, config['CNN']['n_mels']],
-                                        strides=[1, config['CNN']['n_mels']])
-        pool7_rs = tf.squeeze(pool7, [3])
-        conv7 = tf.layers.conv1d(inputs=pool7_rs,
-                             filters=config['CNN']['num_filters']-remove,
-                             kernel_size=165,
-                             padding="same",
-                             activation=tf.nn.relu,
-                             kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-
-        # [TEMPORAL-FEATURES] - average pooling + filter shape 8: 128x1
-        pool8 = tf.layers.average_pooling2d(inputs=input_layer,
-                                        pool_size=[1, config['CNN']['n_mels']],
-                                        strides=[1, config['CNN']['n_mels']])
-        pool8_rs = tf.squeeze(pool8, [3])
-        conv8 = tf.layers.conv1d(inputs=pool8_rs,
-                             filters=config['CNN']['num_filters']*2-remove,
-                             kernel_size=128,
-                             padding="same",
-                             activation=tf.nn.relu,
-                             kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-
-        # [TEMPORAL-FEATURES] - average pooling + filter shape 9: 64x1
-        pool9 = tf.layers.average_pooling2d(inputs=input_layer,
-                                        pool_size=[1, config['CNN']['n_mels']],
-                                        strides=[1, config['CNN']['n_mels']])
-        pool9_rs = tf.squeeze(pool9, [3])
-        conv9 = tf.layers.conv1d(inputs=pool9_rs,
-                             filters=config['CNN']['num_filters']*4-remove,
-                             kernel_size=64,
-                             padding="same",
-                             activation=tf.nn.relu,
-                             kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-
-        # [TEMPORAL-FEATURES] - average pooling + filter shape 10: 32x1
-        pool10 = tf.layers.average_pooling2d(inputs=input_layer,
-                                         pool_size=[1, config['CNN']['n_mels']],
-                                         strides=[1, config['CNN']['n_mels']])
-        pool10_rs = tf.squeeze(pool10, [3])
-        conv10 = tf.layers.conv1d(inputs=pool10_rs,
-                              filters=config['CNN']['num_filters']*8-remove,
-                              kernel_size=32,
-                              padding="same",
-                              activation=tf.nn.relu,
-                              kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-
-    global sess
-    sess = tf.InteractiveSession()
-    sess.run(tf.global_variables_initializer())
-
-    # concatenate all feature maps
-    timbral = tf.concat([p1, p2, p3, p4, p5, p6], 2)
-    temporal = tf.concat([conv7, conv8, conv9, conv10], 2)
-
-    print(timbral.get_shape)
-    print(temporal.get_shape)
-
-    # check [moving_mean, moving_variance, beta, gamma]
-    #    [batch_normalization_8/moving_mean:0, batch_normalization_8/moving_variance:0,
-    #    .. 'batch_normalization_8/beta', 'batch_normalization_8/gamma:0']
-    #    sess.run('batch_normalization_8/moving_mean:0')
-
-    return [timbral, temporal]
+    elif len(src) > config['CNN']['n_frames']:
+        print('Cropping audio!')
+        src = src[:config['CNN']['n_frames'], :]
+     
+    audio_rep = np.expand_dims(src, axis=0) # let the tensor be
+    return audio_rep
 
 
 def select_cnn_feature_layers(feature_maps, selected_features_list):
@@ -393,7 +157,9 @@ def select_cnn_feature_layers(feature_maps, selected_features_list):
     return selected_features
 
 
-# MFCCs
+#-------#
+# MFCCs #
+#-------#
 
 def extract_mfcc_features(audio, sampling_rate=12000): 
     src, sr = librosa.load(audio, sr=sampling_rate)
@@ -432,10 +198,8 @@ def format_mfcc_data(prefix, list_audios):
     ID = []
     n_song = 0
     for song in songs_list:
-        ground_truth = song[:song.rfind('/')] # remove?
         print(str(n_song) + ': ' + song[:-1])
         X.append(extract_mfcc_features(prefix + song[:-1], config['sampling_rate']))
-        #import ipdb; ipdb.set_trace()
         Y.append(datasets.path2gt(song[:-1], config['dataset']))
         ID.append(song[:-1])
         n_song += 1
@@ -452,7 +216,7 @@ if __name__ == '__main__':
     
     print(config)
 
-    if not config['load_extracted_features']: 
+    if not config['load_extracted_features']: # extract features: MFCC of CNN
 
         print('Set file name (unique identifier) for the experiment..')
         if config['features_type'] == 'MFCC':
@@ -467,12 +231,16 @@ if __name__ == '__main__':
 
         print('Extracting features..')
         if config['features_type'] == 'CNN':
+            x_in = tf.placeholder(tf.float32, [None, None, config['CNN']['n_mels']])
             if config['CNN']['architecture'] == 'cnn_small_filters':
-                features_definition = cnn_small_filters()
+                features_definition = dl_models.cnn_small_filters(config, x_in)
             elif config['CNN']['architecture'] == 'cnn_music':
-                features_definition = cnn_music()
+                features_definition = dl_models.cnn_music(config, x_in)
+            sess = tf.InteractiveSession()
+            sess.run(tf.global_variables_initializer())
             print('Number of parameters of the model: ' + str(
                    count_params(tf.trainable_variables()))+'\n')
+
             if config['audios_list'] == False:
                 print('Extract features for train-set..')
                 x_train, y_train, id_train = format_cnn_data(prefix=config['audio_path'],
@@ -517,7 +285,6 @@ if __name__ == '__main__':
     else:  # load extracted features
         
         print('Loading features: ' + config['load_extracted_features'])
-
         if config['audios_list'] == False:
             with open(config['load_extracted_features'], 'rb') as f:
                 x_train, y_train, id_train, x_val, y_val, id_val, x_test, y_test, id_test, config = pickle.load(f)
@@ -526,9 +293,7 @@ if __name__ == '__main__':
                 x, y, ids, config = pickle.load(f)
 
     if config['features_type'] == 'CNN':
-
         print('Select CNN features..')
-
         print('Data size (data points, feature vector)..')
         if config['audios_list'] == False:
             x_train = select_cnn_feature_layers(x_train, config['CNN']['selected_features_list'])
@@ -547,53 +312,39 @@ if __name__ == '__main__':
 
     if not os.path.exists(config['results_folder']):
         os.makedirs(config['results_folder'])
-    #f = open(config['results_folder'] + experiment_name + '.txt','w')
-    f = open(config['results_folder'] + 'moguda.txt','w')
-    if config['dataset'] == 'UrbanSound8K':
-        
-        #trobar putes partitions
-        print('Oju!')
-        #import ipdb; ipdb.set_trace()
-        #import time
-        #time.sleep(60)
+    f = open(config['results_folder'] + experiment_name + '.txt','w')
 
+    if config['dataset'] == 'UrbanSound8K':
+        print('UrbanSound8K dataset with pre-defined splits!')
         df = pd.read_csv('/data/UrbanSound8K/metadata/UrbanSound8K.csv')
         folds_mask = []
         for i in ids:
             tag = i[i.rfind('/')+1:]
             folds_mask.append(int(df[df.slice_file_name==tag].fold))
         ps = PredefinedSplit(test_fold=folds_mask)
-
-        # IMPRIMR PS PER VEURE QUE PASSA!!! IPDB AQUI?
-        #import ipdb; ipdb.set_trace()
-
-        print('Peligru!')
         svc = SVC()
-        svm = GridSearchCV(svc, svm_params, cv=ps, n_jobs=3, pre_dispatch=3*8).fit(x, y)
-
-        print('Best score of {}: {}'.format(svm.best_score_,svm.best_params_))
+        svm = GridSearchCV(svc, svm_params, cv=ps, n_jobs=3, pre_dispatch=3*8, verbose=config['SVM_verbose']).fit(x, y)
+        print('Best score of ' + str(svm.best_score_) + ': ' + str(svm.best_params_))
         print(svm.best_score_)
         print(config)
 
         print('Storing results..')        
-
         f.write('Best score of ' + str(svm.best_score_) + ': ' + str(svm.best_params_))
         f.write(str(config))
 
-
-
     elif config['audios_list'] == False:
+        print('train/val/test partitions are pre-defined!')
         x_dev = np.concatenate((x_train, x_val), axis=0)
         y_dev = np.concatenate((y_train, y_val), axis=0)
         val_mask = np.concatenate((-np.ones(len(y_train)), np.zeros(len(y_val))), axis=0)
         ps = PredefinedSplit(test_fold=val_mask)
         svc = SVC()
-        hps = GridSearchCV(svc, svm_params, cv=ps, n_jobs=3, pre_dispatch=3*8).fit(x_dev, y_dev)
+        hps = GridSearchCV(svc, svm_params, cv=ps, n_jobs=3, pre_dispatch=3*8, verbose=config['SVM_verbose']).fit(x_dev, y_dev)
         svm = SVC()
         svm.set_params(**hps.best_params_)
         svm.fit(x_train, y_train)
         y_true, y_pred = y_test, svm.predict(x_test)
-        print('Detailed classification report:')
+        print('Detailed classification report: ')
         print(classification_report(y_true, y_pred))
         print('Accuracy test set: ')
         print(accuracy_score(y_test, svm.predict(x_test)))
@@ -605,16 +356,14 @@ if __name__ == '__main__':
         f.write(str(config))
 
     else:
-        svc = SVC()
-        svm = GridSearchCV(svc, svm_params, cv=10, n_jobs=3, pre_dispatch=3*8).fit(x, y)
         print('10 fold cross-validation!')
-
-        print('Best score of {}: {}'.format(svm.best_score_,svm.best_params_))
+        svc = SVC()
+        svm = GridSearchCV(svc, svm_params, cv=10, n_jobs=3, pre_dispatch=3*8, verbose=config['SVM_verbose']).fit(x, y)
+        print('Best score of ' + str(svm.best_score_) + ': ' + str(svm.best_params_))
         print(svm.best_score_)
         print(config)
 
         print('Storing results..')        
-
         f.write('Best score of ' + str(svm.best_score_) + ': ' + str(svm.best_params_))
         f.write(str(config))
 

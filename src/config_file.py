@@ -1,7 +1,7 @@
 config_main = {
 
     'experiment_name': 'v0',
-    'features_type': 'MFCC', # CNN or MFCC
+    'features_type': 'CNN', # CNN or MFCC
     'load_extracted_features': False,
     'sampling_rate': 12000,
 
@@ -25,44 +25,47 @@ config_main = {
     #'audios_list': '/homedtic/jpons/ballroom/allBallroomFiles.txt', 
     #'fix_length_by': 'zero-pad', # 'zero-pad', 'repeat-pad' or 'crop'
 
-    #'dataset': 'GTZAN',
-    #'audio_path': '/data/GTZAN/',
-    #'save_extracted_features_folder': '../data/GTZAN/features/', 
-    #'results_folder': '../data/GTZAN/results/',
-    #'train_set_list': '/home/jpons/GTZAN_partitions/train_filtered.txt',
-    #'val_set_list': '/home/jpons/GTZAN_partitions/valid_filtered.txt',
-    #'test_set_list': '/home/jpons/GTZAN_partitions/test_filtered.txt',
-    #'audios_list': False, 
-    #'fix_length_by': 'zero-pad', # 'zero-pad', 'repeat-pad' or 'crop'
+    'dataset': 'GTZAN',
+    'audio_path': '/data/GTZAN/',
+    'save_extracted_features_folder': '../data/GTZAN/features/', 
+    'results_folder': '../data/GTZAN/results/',
+    'train_set_list': None,#'/home/jpons/GTZAN_partitions/train_filtered.txt',
+    'val_set_list': None,#'/home/jpons/GTZAN_partitions/valid_filtered.txt',
+    'test_set_list': None,#'/home/jpons/GTZAN_partitions/test_filtered.txt',
+    'audios_list': '/home/jpons/GTZAN_no_partitions_random/list_random.txt', 
+    'fix_length_by': 'zero-pad', # 'zero-pad', 'repeat-pad' or 'crop'
 
-    'dataset': 'UrbanSound8K',
-    'audio_path': '/data/UrbanSound8K/',
-    'save_extracted_features_folder': '../data/UrbanSound8K/features/', 
-    'results_folder': '../data/UrbanSound8K/results/',
-    'train_set_list': None,
-    'val_set_list': None,
-    'test_set_list': None,
-    'audios_list': '/data/UrbanSound8K/allFiles_debug.txt', 
-    'fix_length_by': 'zero-pad', # 'zero-pad', 'repeat-pad', 'crop' or False
+    #'dataset': 'UrbanSound8K',
+    #'audio_path': '/data/UrbanSound8K/',
+    #'save_extracted_features_folder': '../data/UrbanSound8K/features/', 
+    #'results_folder': '../data/UrbanSound8K/results/',
+    #'train_set_list': None,
+    #'val_set_list': None,
+    #'test_set_list': None,
+    #'audios_list': '/data/UrbanSound8K/allFiles_debug.txt', 
+    #'fix_length_by': 'repeat-pad', # 'zero-pad', 'repeat-pad', 'crop' or False
 
     'CNN': {
         'n_mels': 96,
-        'n_frames': 111, # GTZAN: 1404, OLD: 1360, BALLROOM: 1376, US8K: 101/188
+        'n_frames': 1376, # GTZAN: 1404, OLD: 1360, BALLROOM: 1376, US8K: 101/188
         'batch_size': 5,
 
-        #'architecture': 'cnn_small_filters',
-        #'num_filters': 32, # 717 or 32
-        #'selected_features_list': [0, 1, 2, 3, 4]
+        'architecture': 'cnn_small_filters',
+        'num_filters': 32, # 717 or 32
+        
+'selected_features_list': [0, 1, 2, 3, 4]
 
-        'architecture': 'cnn_music',
-        'num_filters': 4, # 256, 128, 64, 32, 16, 8 or 4
-        'selected_features_list': [0,1] # timbral [0], temporal [1] or both [0, 1]
+        #'architecture': 'cnn_music',
+        #'num_filters': 128, # 256, 128, 64, 32, 16, 8 or 4
+        #'selected_features_list': [0,1] # timbral [0], temporal [1] or both [0, 1]
     },
 
     'MFCC': {
         'number': 20,
         'fixed_length': 2048
-    }
+    },
+
+    'SVM_verbose': 1
 }
 
 """
@@ -108,6 +111,9 @@ DOCUMENTATION
 
 'sampling_rate': sampling rate at which we process the audio.
  -- VALUE: 12000
+
+'SVM_verbose': verbose value for the SVM grid search.
+ -- VALUE: 2
 
 
 'features_type': select if the features to extract are CNN or MFCC based.
@@ -157,4 +163,3 @@ DOCUMENTATION
  -- EXAMPLE: see 'features_type' example
 
 """
-
