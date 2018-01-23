@@ -7,57 +7,56 @@ config_main = {
 
     #'dataset': 'Extended Ballroom',
     #'audio_path': '/mnt/vmdata/users/jpons/extended_ballroom/',
-    #'save_extracted_features_folder': '../data/Extended_Ballroom/features/', 
+    #'save_extracted_features_folder': '../data/Extended_Ballroom/features/',
     #'results_folder': '../data/Extended_Ballroom/results/',
     #'train_set_list': None,
     #'val_set_list': None,
     #'test_set_list': None,
-    #'audios_list': '/mnt/vmdata/users/jpons/extended_ballroom/all_files.txt', 
+    #'audios_list': '/mnt/vmdata/users/jpons/extended_ballroom/all_files.txt',
     #'fix_length_by': 'zero-pad', # 'zero-pad', 'repeat-pad' or 'crop'
 
     #'dataset': 'Ballroom',
     #'audio_path': '/homedtic/jpons/ballroom/BallroomData/',
-    #'save_extracted_features_folder': '../data/Ballroom/features/', 
+    #'save_extracted_features_folder': '../data/Ballroom/features/',
     #'results_folder': '../data/Ballroom/results/',
     #'train_set_list': None,
     #'val_set_list': None,
     #'test_set_list': None,
-    #'audios_list': '/homedtic/jpons/ballroom/allBallroomFiles.txt', 
+    #'audios_list': '/homedtic/jpons/ballroom/allBallroomFiles.txt',
     #'fix_length_by': 'zero-pad', # 'zero-pad', 'repeat-pad' or 'crop'
 
-    'dataset': 'GTZAN',
-    'audio_path': '/data/GTZAN/',
-    'save_extracted_features_folder': '../data/GTZAN/features/', 
-    'results_folder': '../data/GTZAN/results/',
-    'train_set_list': None,#'/home/jpons/GTZAN_partitions/train_filtered.txt',
-    'val_set_list': None,#'/home/jpons/GTZAN_partitions/valid_filtered.txt',
-    'test_set_list': None,#'/home/jpons/GTZAN_partitions/test_filtered.txt',
-    'audios_list': '/home/jpons/GTZAN_no_partitions_random/list_random.txt', 
-    'fix_length_by': 'zero-pad', # 'zero-pad', 'repeat-pad' or 'crop'
+    #'dataset': 'GTZAN',
+    #'audio_path': '/data/GTZAN/',
+    #'save_extracted_features_folder': '../data/GTZAN/features/',
+    #'results_folder': '../data/GTZAN/results/',
+    #'train_set_list': None,#'/home/jpons/GTZAN_partitions/train_filtered.txt',
+    #'val_set_list': None,#'/home/jpons/GTZAN_partitions/valid_filtered.txt',
+    #'test_set_list': None,#'/home/jpons/GTZAN_partitions/test_filtered.txt',
+    #'audios_list': '/home/jpons/GTZAN_no_partitions_random/list_random.txt',
+    #'fix_length_by': 'zero-pad', # 'zero-pad', 'repeat-pad' or 'crop'
 
-    #'dataset': 'UrbanSound8K',
-    #'audio_path': '/data/UrbanSound8K/',
-    #'save_extracted_features_folder': '../data/UrbanSound8K/features/', 
-    #'results_folder': '../data/UrbanSound8K/results/',
-    #'train_set_list': None,
-    #'val_set_list': None,
-    #'test_set_list': None,
-    #'audios_list': '/data/UrbanSound8K/allFiles_debug.txt', 
-    #'fix_length_by': 'repeat-pad', # 'zero-pad', 'repeat-pad', 'crop' or False
+    'dataset': 'UrbanSound8K',
+    'audio_path': '/data/UrbanSound8K/',
+    'save_extracted_features_folder': '../data/UrbanSound8K/features/',
+    'results_folder': '../data/UrbanSound8K/results/',
+    'train_set_list': None,
+    'val_set_list': None,
+    'test_set_list': None,
+    'audios_list': '/data/UrbanSound8K/allFiles.txt',
+    'fix_length_by': 'repeat-pad', # 'zero-pad', 'repeat-pad', 'crop' or False
 
     'CNN': {
         'n_mels': 96,
-        'n_frames': 1376, # GTZAN: 1404, OLD: 1360, BALLROOM: 1376, US8K: 101/188
+        'n_frames': 188, # GTZAN: 1404, OLD: 1360, BALLROOM: 1376, US8K: 101/188
         'batch_size': 5,
 
-        'architecture': 'cnn_small_filters',
-        'num_filters': 32, # 717 or 32
-        
-'selected_features_list': [0, 1, 2, 3, 4]
+        #'architecture': 'cnn_small_filters',
+        #'num_filters': 32, # 717 or 32
+        #'selected_features_list': [0, 1, 2, 3, 4]
 
-        #'architecture': 'cnn_music',
-        #'num_filters': 128, # 256, 128, 64, 32, 16, 8 or 4
-        #'selected_features_list': [0,1] # timbral [0], temporal [1] or both [0, 1]
+        'architecture': 'cnn_music',
+        'num_filters': 8, # 256, 128, 64, 32, 16, 8 or 4
+        'selected_features_list': [0] # timbral [0], temporal [1] or both [0, 1]
     },
 
     'MFCC': {
