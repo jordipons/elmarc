@@ -127,14 +127,12 @@ def compute_spectrogram(audio_path, sampling_rate):
         if len(src) < config['CNN']['n_frames']:
             if config['fix_length_by'] == 'zero-pad':
                 print('Zero padding!')
-                import time; time.sleep(1)
                 src_zeros = np.zeros((config['CNN']['n_frames'],config['CNN']['n_mels']))
                 src_zeros[:len(src)] = src
                 src = src_zeros
 
             elif config['fix_length_by'] == 'repeat-pad' and len(src) < config['CNN']['n_frames']:
                 print('Repeat and crop to the fixed_length!')
-                import time; time.sleep(1)
                 src_repeat = src
                 while (src_repeat.shape[0] < config['CNN']['n_frames']):
                     src_repeat = np.concatenate((src_repeat, src), axis=0)    
@@ -143,7 +141,6 @@ def compute_spectrogram(audio_path, sampling_rate):
 
         elif len(src) > config['CNN']['n_frames']:
             print('Cropping audio!')
-            import time; time.sleep(1)
             src = src[:config['CNN']['n_frames'], :]
 
         audio_rep = np.expand_dims(src, axis=0) # let the tensor be

@@ -1,5 +1,9 @@
-
 config_main = {
+
+    'experiment_name': 'v0',
+    'features_type': 'MFCC', # CNN or MFCC
+    'load_extracted_features': False,
+    'sampling_rate': 12000,
 
     #'dataset': 'Extended Ballroom',
     #'audio_path': '/mnt/vmdata/users/jpons/extended_ballroom/',
@@ -41,11 +45,6 @@ config_main = {
     'audios_list': '/data/UrbanSound8K/allFiles_debug.txt', 
     'fix_length_by': 'zero-pad', # 'zero-pad', 'repeat-pad', 'crop' or False
 
-    'sampling_rate': 12000,
-    'experiment_name': 'v0',
-    'features_type': 'CNN', # CNN or MFCC
-    'load_extracted_features': False,
-
     'CNN': {
         'n_mels': 96,
         'n_frames': 111, # GTZAN: 1404, OLD: 1360, BALLROOM: 1376, US8K: 101/188
@@ -68,9 +67,8 @@ config_main = {
 
 """
 
-#################
-# DOCUMENTATION #
-#################
+DOCUMENTATION 
+
 
 'experiment_name': personal string to easily identify an experiment.
  -- EXAMPLE: 'v0_final3_true'
@@ -88,6 +86,7 @@ config_main = {
 
 'load_extracted_features': False or path where the extracted features were saved.
  -- VALUES: False or '../data/UrbanSound8K/features/'
+
 
 'audios_list': set 'audios_list' to FALSE to specify partitions in 'train/val/test _set_list'.
  -- EXAMPLE: '/data/UrbanSound8K/allFiles_debug.txt' or False
