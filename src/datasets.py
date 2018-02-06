@@ -120,5 +120,5 @@ def urban_sound_path2gt(file_path):
 
     tag = file_path[file_path.rfind('/')+1:]
     print(tag)
-    df = pd.read_csv('/data/UrbanSound8K/metadata/UrbanSound8K.csv')
+    df = pd.read_csv('/datasets/MTG/users/jpons/urban_sounds/UrbanSound8K/metadata/UrbanSound8K.csv')
     return int(df[df.slice_file_name==tag].classID)

@@ -316,7 +316,7 @@ if __name__ == '__main__':
 
     if config['dataset'] == 'UrbanSound8K':
         print('UrbanSound8K dataset with pre-defined splits!')
-        df = pd.read_csv('/data/UrbanSound8K/metadata/UrbanSound8K.csv')
+        df = pd.read_csv('/datasets/MTG/users/jpons/urban_sounds/UrbanSound8K/metadata/UrbanSound8K.csv')
         folds_mask = []
         for i in ids:
             tag = i[i.rfind('/')+1:]
