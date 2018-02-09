@@ -12,6 +12,9 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import classification_report
 from sklearn.cross_validation import PredefinedSplit
+from sklearn.neural_network import MLPClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn import linear_model
 from config_file import config_main
 config = config_main
 
@@ -216,18 +219,17 @@ if __name__ == '__main__':
     
     print(config)
 
+    print('Set file name (unique identifier) for the experiment..')
+    if config['features_type'] == 'MFCC':
+        experiment_name = str(config['experiment_name']) + '_MFCC_' + str(int(time.time()))
+    elif config['features_type'] == 'CNN':
+        experiment_name = str(config['experiment_name']) + '_CNN_' + str(config['CNN']['n_mels']) \
+            + '_' + str(config['CNN']['n_frames']) + '_' + str(config['CNN']['batch_size']) \
+            + '_' + str(config['CNN']['architecture']) + '_' + str(config['CNN']['num_filters']) \
+            + '_' + str(config['CNN']['selected_features_list']) + '_'+ str(int(time.time()))
+    print(experiment_name)
+
     if not config['load_extracted_features']: # extract features: MFCC of CNN
-
-        print('Set file name (unique identifier) for the experiment..')
-        if config['features_type'] == 'MFCC':
-            experiment_name = str(config['experiment_name']) + '_MFCC_' + str(int(time.time()))
-        elif config['features_type'] == 'CNN':
-            experiment_name = str(config['experiment_name']) + '_CNN_' + str(config['CNN']['n_mels']) \
-                + '_' + str(config['CNN']['n_frames']) + '_' + str(config['CNN']['batch_size']) \
-                + '_' + str(config['CNN']['architecture']) + '_' + str(config['CNN']['num_filters']) \
-                + '_' + str(config['CNN']['selected_features_list']) + '_'+ str(int(time.time()))
-        print(experiment_name)
-
 
         print('Extracting features..')
         if config['features_type'] == 'CNN':
@@ -338,21 +340,30 @@ if __name__ == '__main__':
         y_dev = np.concatenate((y_train, y_val), axis=0)
         val_mask = np.concatenate((-np.ones(len(y_train)), np.zeros(len(y_val))), axis=0)
         ps = PredefinedSplit(test_fold=val_mask)
-        svc = SVC()
-        hps = GridSearchCV(svc, svm_params, cv=ps, n_jobs=3, pre_dispatch=3*8, verbose=config['SVM_verbose']).fit(x_dev, y_dev)
-        svm = SVC()
-        svm.set_params(**hps.best_params_)
-        svm.fit(x_train, y_train)
-        y_true, y_pred = y_test, svm.predict(x_test)
+        if config['model_type'] == 'SVM':
+            svc = SVC()
+            hps = GridSearchCV(svc, svm_params, cv=ps, n_jobs=3, pre_dispatch=3*8, verbose=config['SVM_verbose']).fit(x_dev, y_dev)
+            model = SVC()
+            model.set_params(**hps.best_params_)
+        elif config['model_type'] == 'MLP':
+            model = MLPClassifier(hidden_layer_sizes=(20,), max_iter=600, verbose=10, early_stopping=False)
+        elif config['model_type'] == 'linear':
+            model = linear_model.SGDClassifier()
+        elif config['model_type'] == 'KNN':
+            model = KNeighborsClassifier(n_neighbors=30)
+
+        model.fit(x_train, y_train)  
+        y_true, y_pred = y_test, model.predict(x_test)
+
         print('Detailed classification report: ')
         print(classification_report(y_true, y_pred))
         print('Accuracy test set: ')
-        print(accuracy_score(y_test, svm.predict(x_test)))
+        print(accuracy_score(y_test, model.predict(x_test)))
         print(config)
 
         print('Storing results..')   
         f.write(str(classification_report(y_true, y_pred)))     
-        f.write('Accuracy: ' + str(accuracy_score(y_test, svm.predict(x_test))) + '\n')
+        f.write('Accuracy: ' + str(accuracy_score(y_test, model.predict(x_test))) + '\n')
         f.write(str(config))
 
     else:
