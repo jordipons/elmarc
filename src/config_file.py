@@ -2,29 +2,29 @@ config_main = {
 
     'experiment_name': 'v0_knn30_MLP20',
     'features_type': 'CNN', # CNN or MFCC
-    'model_type': 'linear', # SVM, MLP, KNN or linear
+    'model_type': 'SVM', # SVM, MLP, KNN or linear
     'load_extracted_features': False,
     'sampling_rate': 12000,
 
     #'dataset': 'Extended Ballroom',
-    #'audio_path': '/mnt/vmdata/users/jpons/extended_ballroom/',
+    #'audio_path': '/datasets/MTG/users/jpons/extended_ballroom/',
     #'save_extracted_features_folder': '../data/Extended_Ballroom/features/',
     #'results_folder': '../data/Extended_Ballroom/results/',
     #'train_set_list': None,
     #'val_set_list': None,
     #'test_set_list': None,
-    #'audios_list': '/mnt/vmdata/users/jpons/extended_ballroom/all_files.txt',
-    #'fix_length_by': 'zero-pad', # 'zero-pad', 'repeat-pad' or 'crop'
+    #'audios_list': '/datasets/MTG/users/jpons/extended_ballroom/all_files.txt',
+    #'fix_length_by': 'crop', # 'zero-pad', 'repeat-pad' or 'crop'
 
     #'dataset': 'Ballroom',
-    #'audio_path': '/homedtic/jpons/ballroom/BallroomData/',
+    #'audio_path': '/datasets/MTG/users/jpons/ballroom/BallroomData/',
     #'save_extracted_features_folder': '../data/Ballroom/features/',
     #'results_folder': '../data/Ballroom/results/',
     #'train_set_list': None,
     #'val_set_list': None,
     #'test_set_list': None,
-    #'audios_list': '/homedtic/jpons/ballroom/allBallroomFiles.txt',
-    #'fix_length_by': 'zero-pad', # 'zero-pad', 'repeat-pad' or 'crop'
+    #'audios_list': '/datasets/MTG/users/jpons/ballroom/allBallroomFiles.txt',
+    #'fix_length_by': 'crop', # 'zero-pad', 'repeat-pad' or 'crop'
 
     #'dataset': 'GTZAN',
     #'audio_path': '/datasets/MTG/users/jpons/GTZAN/',
@@ -36,28 +36,28 @@ config_main = {
     #'audios_list': False,
     #'fix_length_by': 'crop', # 'zero-pad', 'repeat-pad' or 'crop'
 
-    #'dataset': 'UrbanSound8K',
-    #'audio_path': '/datasets/MTG/users/jpons/urban_sounds/UrbanSound8K/',
-    #'save_extracted_features_folder': '../data/UrbanSound8K/features/',
-    #'results_folder': '../data/UrbanSound8K/results/',
-    #'train_set_list': None,
-    #'val_set_list': None,
-    #'test_set_list': None,
-    #'audios_list': '/datasets/MTG/users/jpons/urban_sounds/UrbanSound8K/allFiles.txt',
-    #'fix_length_by': 'repeat-pad', # 'zero-pad', 'repeat-pad', 'crop' or False
+    'dataset': 'UrbanSound8K',
+    'audio_path': '/datasets/MTG/users/jpons/urban_sounds/UrbanSound8K/',
+    'save_extracted_features_folder': '../data/UrbanSound8K/features/',
+    'results_folder': '../data/UrbanSound8K/results/',
+    'train_set_list': None,
+    'val_set_list': None,
+    'test_set_list': None,
+    'audios_list': '/datasets/MTG/users/jpons/urban_sounds/UrbanSound8K/allFiles.txt',
+    'fix_length_by': 'repeat-pad', # 'zero-pad', 'repeat-pad', 'crop' or False
 
     'CNN': {
         'n_mels': 96,
-        'n_frames': 1404, # GTZAN: 1404, OLD: 1360, BALLROOM: 1376, US8K: 101/188
+        'n_frames': 1376, # GTZAN: 1404, OLD: 1360, BALLROOM: 1376, US8K: 101/188
         'batch_size': 5,
 
-        'architecture': 'cnn_small_filters',
-        'num_filters': 32, # 717 or 32
-        'selected_features_list': [0, 1, 2, 3, 4]
+        #'architecture': 'cnn_small_filters',
+        #'num_filters': 717, # 717 or 32
+        #'selected_features_list': [0, 1, 2, 3, 4]
 
-        #'architecture': 'cnn_music',
-        #'num_filters': 4, # 256, 128, 64, 32, 16, 8 or 4
-        #'selected_features_list': [0,1] # timbral [0], temporal [1] or both [0, 1]
+        'architecture': 'cnn_music',
+        'num_filters': 256, # 256, 128, 64, 32, 16, 8 or 4
+        'selected_features_list': [1] # timbral [0], temporal [1] or both [0, 1]
     },
 
     'MFCC': {

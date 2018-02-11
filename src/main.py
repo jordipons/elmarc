@@ -14,6 +14,7 @@ from sklearn.metrics import classification_report
 from sklearn.cross_validation import PredefinedSplit
 from sklearn.neural_network import MLPClassifier
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import cross_val_score
 from sklearn import linear_model
 from config_file import config_main
 config = config_main
@@ -29,6 +30,7 @@ svm_params = [
 
 ]
 
+neighbors = [1,3,5,10,20,30,50,100]
 
 #------#
 # CNNs #
@@ -368,14 +370,34 @@ if __name__ == '__main__':
 
     else:
         print('10 fold cross-validation!')
-        svc = SVC()
-        svm = GridSearchCV(svc, svm_params, cv=10, n_jobs=3, pre_dispatch=3*8, verbose=config['SVM_verbose']).fit(x, y)
-        print('Best score of ' + str(svm.best_score_) + ': ' + str(svm.best_params_))
-        print(svm.best_score_)
-        print(config)
+        if config['model_type'] == 'SVM':
+            svc = SVC()
+            model = GridSearchCV(svc, svm_params, cv=10, n_jobs=3, pre_dispatch=3*8, verbose=config['SVM_verbose']).fit(x, y)
+            print('[SVM] Best score of ' + str(model.best_score_) + ': ' + str(model.best_params_))
+            f.write('[SVM]Best score of ' + str(model.best_score_) + ': ' + str(model.best_params_))
+        elif config['model_type'] == 'MLP':
+            mlp = MLPClassifier(hidden_layer_sizes=(20,), max_iter=600, verbose=10, early_stopping=False)
+            scores = cross_val_score(mlp, x, y, cv=10, scoring='accuracy')
+            print('[MLP] best score: ' + str(scores.mean()))
+            f.write('[MLP] best score: ' + str(scores.mean()))
+        elif config['model_type'] == 'linear':
+            linear_model = linear_model.SGDClassifier()
+            scores = cross_val_score(linear_model, x, y, cv=10, scoring='accuracy')
+            print('[linear] best score: ' + str(scores.mean()))
+            f.write('[linear] best score: ' + str(scores.mean()))
+        elif config['model_type'] == 'KNN':
+            score_max = 0
+            k_near = -1
+            for k in neighbors:
+                knn = KNeighborsClassifier(n_neighbors=k)
+                scores = cross_val_score(knn, x, y, cv=10, scoring='accuracy')
+                if scores.mean() > score_max:
+                    k_near = k
+                    score_max = scores.mean()
+            print('[KNN] best score: ' + str(score_max) + ' with k = ' + str(k_near))
+            f.write('[KNN] best score: ' + str(score_max) + ' with k = ' + str(k_near))
 
-        print('Storing results..')        
-        f.write('Best score of ' + str(svm.best_score_) + ': ' + str(svm.best_params_))
+        print(config)
         f.write(str(config))
 
     f.close()
