@@ -16,6 +16,8 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import cross_val_score
 from sklearn.svm import LinearSVC
+from elm import GenELMClassifier
+from random_layer import RandomLayer
 from sklearn import linear_model
 
 from config_file import config_main
@@ -339,6 +341,17 @@ if __name__ == '__main__':
             model = GridSearchCV(svc, svm_params, cv=ps, n_jobs=3, pre_dispatch=3*8, verbose=config['SVM_verbose']).fit(x, y)
             print('[SVM] Best score of ' + str(model.best_score_) + ': ' + str(model.best_params_))
             f.write('[SVM]Best score of ' + str(model.best_score_) + ': ' + str(model.best_params_))
+        elif config['model_type'] == 'linearSVM':
+            linSVM = LinearSVC(C=0.1)
+            scores = cross_val_score(linSVM, x, y, cv=ps, scoring='accuracy')
+            print('[linSVM] best score: ' + str(scores.mean()))
+            f.write('[linSVM] best score: ' + str(scores.mean()))
+        elif config['model_type'] == 'ELM':
+            rl = RandomLayer(n_hidden=400)
+            elm = GenELMClassifier( hidden_layer = rl )
+            scores = cross_val_score(elm, x, y, cv=ps, scoring='accuracy')
+            print('[ELM] best score: ' + str(scores.mean()))
+            f.write('[ELM] best score: ' + str(scores.mean()))
         elif config['model_type'] == 'MLP':
             mlp = MLPClassifier(hidden_layer_sizes=(20,), max_iter=600, verbose=10, early_stopping=False)
             scores = cross_val_score(mlp, x, y, cv=ps, scoring='accuracy')
@@ -375,6 +388,11 @@ if __name__ == '__main__':
             hps = GridSearchCV(svc, svm_params, cv=ps, n_jobs=3, pre_dispatch=3*8, verbose=config['SVM_verbose']).fit(x_dev, y_dev)
             model = SVC()
             model.set_params(**hps.best_params_)
+        elif config['model_type'] == 'linearSVM':
+            model = LinearSVC(C=0.1)
+        elif config['model_type'] == 'ELM':
+            rl = RandomLayer(n_hidden=400)
+            model = GenELMClassifier( hidden_layer = rl )
         elif config['model_type'] == 'MLP':
             model = MLPClassifier(hidden_layer_sizes=(20,), max_iter=600, verbose=10, early_stopping=False)
         elif config['model_type'] == 'linear':
@@ -403,6 +421,17 @@ if __name__ == '__main__':
             model = GridSearchCV(svc, svm_params, cv=10, n_jobs=3, pre_dispatch=3*8, verbose=config['SVM_verbose']).fit(x, y)
             print('[SVM] Best score of ' + str(model.best_score_) + ': ' + str(model.best_params_))
             f.write('[SVM]Best score of ' + str(model.best_score_) + ': ' + str(model.best_params_))
+        elif config['model_type'] == 'linearSVM':
+            linSVM = LinearSVC(C=0.1)
+            scores = cross_val_score(linSVM, x, y, cv=2, scoring='accuracy') # CV=100!!
+            print('[linSVM] best score: ' + str(scores.mean()))
+            f.write('[linSVM] best score: ' + str(scores.mean()))
+        elif config['model_type'] == 'ELM':
+            rl = RandomLayer(n_hidden=400)
+            elm = GenELMClassifier( hidden_layer = rl )
+            scores = cross_val_score(elm, x, y, cv=10, scoring='accuracy')
+            print('[ELM] best score: ' + str(scores.mean()))
+            f.write('[ELM] best score: ' + str(scores.mean()))
         elif config['model_type'] == 'MLP':
             mlp = MLPClassifier(hidden_layer_sizes=(20,), max_iter=600, verbose=10, early_stopping=False)
             scores = cross_val_score(mlp, x, y, cv=10, scoring='accuracy')
