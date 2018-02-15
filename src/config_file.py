@@ -6,15 +6,15 @@ config_main = {
     'load_extracted_features': False,
     'sampling_rate': 12000,
 
-    'dataset': 'Extended Ballroom',
-    'audio_path': '/datasets/MTG/users/jpons/extended_ballroom/',
-    'save_extracted_features_folder': '../data/Extended_Ballroom/features/',
-    'results_folder': '../data/Extended_Ballroom/results/',
-    'train_set_list': None,
-    'val_set_list': None,
-    'test_set_list': None,
-    'audios_list': '/datasets/MTG/users/jpons/extended_ballroom/all_files.txt',
-    'fix_length_by': 'crop', # 'zero-pad', 'repeat-pad' or 'crop'
+    #'dataset': 'Extended Ballroom',
+    #'audio_path': '/datasets/MTG/users/jpons/extended_ballroom/',
+    #'save_extracted_features_folder': '../data/Extended_Ballroom/features/',
+    #'results_folder': '../data/Extended_Ballroom/results/',
+    #'train_set_list': None,
+    #'val_set_list': None,
+    #'test_set_list': None,
+    #'audios_list': '/datasets/MTG/users/jpons/extended_ballroom/all_files.txt',
+    #'fix_length_by': 'crop', # 'zero-pad', 'repeat-pad' or 'crop'
 
     #'dataset': 'Ballroom',
     #'audio_path': '/datasets/MTG/users/jpons/ballroom/BallroomData/',
@@ -26,15 +26,15 @@ config_main = {
     #'audios_list': '/datasets/MTG/users/jpons/ballroom/allBallroomFiles.txt',
     #'fix_length_by': 'crop', # 'zero-pad', 'repeat-pad' or 'crop'
 
-    #'dataset': 'GTZAN',
-    #'audio_path': '/datasets/MTG/users/jpons/GTZAN/',
-    #'save_extracted_features_folder': '../data/GTZAN/features/',
-    #'results_folder': '../data/GTZAN/results/',
-    #'train_set_list': '/datasets/MTG/users/jpons/GTZAN_debug_partitions/train_filtered.txt',
-    #'val_set_list': '/datasets/MTG/users/jpons/GTZAN_debug_partitions/valid_filtered.txt',
-    #'test_set_list': '/datasets/MTG/users/jpons/GTZAN_debug_partitions/test_filtered.txt',
-    #'audios_list': False,
-    #'fix_length_by': 'crop', # 'zero-pad', 'repeat-pad' or 'crop'
+    'dataset': 'GTZAN',
+    'audio_path': '/datasets/MTG/users/jpons/GTZAN/',
+    'save_extracted_features_folder': '../data/GTZAN/features/',
+    'results_folder': '../data/GTZAN/results/',
+    'train_set_list': '/datasets/MTG/users/jpons/GTZAN_debug_partitions/train_filtered.txt',
+    'val_set_list': '/datasets/MTG/users/jpons/GTZAN_debug_partitions/valid_filtered.txt',
+    'test_set_list': '/datasets/MTG/users/jpons/GTZAN_debug_partitions/test_filtered.txt',
+    'audios_list': False,
+    'fix_length_by': 'crop', # 'zero-pad', 'repeat-pad' or 'crop'
 
     #'dataset': 'UrbanSound8K',
     #'audio_path': '/datasets/MTG/users/jpons/urban_sounds/UrbanSound8K/',
@@ -55,9 +55,15 @@ config_main = {
         #'num_filters': 32, # 717 or 32
         #'selected_features_list': [0, 1, 2, 3, 4]
 
-        'architecture': 'cnn_music',
-        'num_filters': 256, # 256, 128, 64, 32, 16, 8 or 4
-        'selected_features_list': [1] # timbral [0], temporal [1] or both [0, 1]
+        #'architecture': 'cnn_music',
+        #'num_filters': 256, # 256, 128, 64, 32, 16, 8 or 4
+        #'selected_features_list': [1] # timbral [0], temporal [1] or both [0, 1]
+
+        'architecture': 'cnn_single',
+        'num_filters': 160, # 160
+        'selected_features_list': [0], # conv-layer [0], pooling-layer [1] or both [0, 1]
+        'filter_shape': [7,81], # [t,f]: [7,96]
+        'pool_shape': [1,1] # [t,f]: [1,1]
     },
 
     'MFCC': {

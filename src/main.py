@@ -245,10 +245,11 @@ if __name__ == '__main__':
         print('Extracting features..')
         if config['features_type'] == 'CNN':
             x_in = tf.placeholder(tf.float32, [None, None, config['CNN']['n_mels']])
-            if config['CNN']['architecture'] == 'cnn_small_filters':
-                features_definition = dl_models.cnn_small_filters(config, x_in)
-            elif config['CNN']['architecture'] == 'cnn_music':
-                features_definition = dl_models.cnn_music(config, x_in)
+            features_definition = dl_models.build(config, x_in)
+            #if config['CNN']['architecture'] == 'cnn_small_filters':
+            #    features_definition = dl_models.cnn_small_filters(config, x_in)
+            #elif config['CNN']['architecture'] == 'cnn_music':
+            #    features_definition = dl_models.cnn_music(config, x_in)
             sess = tf.InteractiveSession()
             sess.run(tf.global_variables_initializer())
             print('Number of parameters of the model: ' + str(

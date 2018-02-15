@@ -1,19 +1,10 @@
 import tensorflow as tf
 
-def build(config, x_in):
-    if config['CNN']['architecture'] == 'cnn_small_filters':
-        return cnn_small_filters(config, x_in)
-    elif config['CNN']['architecture'] == 'cnn_single':
-        return cnn_single(config, x_in)
-    elif config['CNN']['architecture'] == 'cnn_music':
-        return cnn_music(config, x_in)
-    # + backend!
-
 def cnn_small_filters(config, x_in):
 
-    with tf.name_scope('cnn_small_filters'):
+    with tf.name_scope('cnn_as_choi'):
 
-        print('[SMALL FILTERS] Input: ' + str(x_in.get_shape))
+        print('Input: ' + str(x_in.get_shape))
 
         input_layer = tf.reshape(x_in,[-1, config['CNN']['n_frames'], config['CNN']['n_mels'], 1])
         conv1 = tf.layers.conv2d(inputs=input_layer,
@@ -71,28 +62,6 @@ def cnn_small_filters(config, x_in):
 
     return [pool1, pool2, pool3, pool4, pool5]
 
-def cnn_single(config, x_in):
-
-    with tf.name_scope('cnn_single'):
-
-        print('[CNN SINGLE] Input: ' + str(x_in.get_shape))
-
-        input_layer = tf.reshape(x_in,[-1, config['CNN']['n_frames'], config['CNN']['n_mels'], 1])
-        conv1 = tf.layers.conv2d(inputs=input_layer,
-                                 filters=config['CNN']['num_filters'],
-                                 kernel_size=config['CNN']['filter_shape'],
-                                 padding='valid',
-                                 activation=tf.nn.elu,
-                                 name='1CNN',
-                                 kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-        pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=config['CNN']['pool_shape'], strides=config['CNN']['pool_shape'])
-
-        
-    print(conv1.get_shape)
-    print(pool1.get_shape)
-
-    return [conv1, pool1]
-
 
 def cnn_music(config, x_in):
    
@@ -115,7 +84,7 @@ def cnn_music(config, x_in):
     # define the cnn_music model  
     with tf.name_scope('cnn_music'):
 
-        print('[MUSIC] Input: ' + str(x_in.get_shape))
+        print('Input: ' + str(x_in.get_shape))
 
         input_layer = tf.reshape(x_in, [-1, config['CNN']['n_frames'], config['CNN']['n_mels'], 1])
 
@@ -254,52 +223,3 @@ def cnn_music(config, x_in):
     #    sess.run('batch_normalization_8/moving_mean:0')
 
     return [timbral, temporal]
-
-
-def backend(route_out, is_training, config, num_units):
-    '''Function implementing the proposed back-end.
-    - 'route_out': is the output of the front-end, and therefore the input of this function.
-    - 'is_training': placeholder indicating weather it is training or test phase, for dropout or batch norm.
-    - 'config': dictionary with some configurable parameters like: number of output units - config['numOutputNeurons']
-                or number of frequency bins of the spectrogram config['setup_params']['yInput']
-    - 'num_units': number of units/neurons of the output dense layer.
-    '''
-
-    # conv layer 1 - adapting dimensions
-    conv1 = tf.layers.conv2d(inputs=route_out,
-                             filters=512,
-                             kernel_size=[7, route_out.shape[2]],
-                             padding="valid",
-                             activation=tf.nn.relu,
-                             name='1cnnOut',
-                             kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-    conv1_t = tf.transpose(conv1, [0, 1, 3, 2])
-
-    # conv layer 2 - residual connection
-    bn_conv1_pad = tf.pad(bn_conv1_t, [[0, 0], [3, 3], [0, 0], [0, 0]], "CONSTANT")
-    conv2 = tf.layers.conv2d(inputs=bn_conv1_pad,
-                             filters=512,
-                             kernel_size=[7, bn_conv1_pad.shape[2]],
-                             padding="valid",
-                             activation=tf.nn.relu,
-                             name='2cnnOut',
-                             kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-    conv2_t = tf.transpose(conv2, [0, 1, 3, 2])
-    res_conv2 = tf.add(conv2_t, conv1_t)
-
-    # temporal pooling
-    pool1 = tf.layers.max_pooling2d(inputs=res_conv2, pool_size=[2, 1], strides=[2, 1], name='poolOut')
-
-    # conv layer 3 - residual connection
-    bn_conv4_pad = tf.pad(pool1, [[0, 0], [3, 3], [0, 0], [0, 0]], "CONSTANT")
-    conv5 = tf.layers.conv2d(inputs=bn_conv4_pad,
-                             filters=512,
-                             kernel_size=[7, bn_conv4_pad.shape[2]],
-                             padding="valid",
-                             activation=tf.nn.relu,
-                             name='3cnnOut',
-                             kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
-    conv5_t = tf.transpose(conv5, [0, 1, 3, 2])
-    res_conv5 = tf.add(conv5_t, pool1)
-
-    return [conv1_t, res_conv2, res_conv5]   
