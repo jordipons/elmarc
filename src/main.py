@@ -15,7 +15,9 @@ from sklearn.cross_validation import PredefinedSplit
 from sklearn.neural_network import MLPClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import cross_val_score
+from sklearn.svm import LinearSVC
 from sklearn import linear_model
+
 from config_file import config_main
 config = config_main
 
@@ -29,6 +31,11 @@ svm_params = [
      'C': [0.1, 2.0, 8.0, 32.0]}
 
 ]
+
+#svm_params = [
+#    {'kernel': ['linear'],
+#     'C': [0.1, 2.0]}
+#]
 
 neighbors = [1,3,5,10,20,30,50,100]
 
@@ -108,7 +115,7 @@ def format_cnn_data(prefix, list_audios):
             X.append(tmp_features)
             Y.append(batch[1][j]) 
             ID.append(batch[2][j])
-        print('Annotations: ' + str(Y))
+        print('Shape Annotations: ' + str(np.array(Y).shape))
         print('Shape X: ' + str(np.array(X).shape))
         print('# IDs: ' + str(np.array(ID).shape[0]))
     return X, Y, ID
@@ -326,14 +333,35 @@ if __name__ == '__main__':
             tag = i[i.rfind('/')+1:]
             folds_mask.append(int(df[df.slice_file_name==tag].fold))
         ps = PredefinedSplit(test_fold=folds_mask)
-        svc = SVC()
-        svm = GridSearchCV(svc, svm_params, cv=ps, n_jobs=3, pre_dispatch=3*8, verbose=config['SVM_verbose']).fit(x, y)
-        print('Best score of ' + str(svm.best_score_) + ': ' + str(svm.best_params_))
-        print(svm.best_score_)
-        print(config)
+        
+        if config['model_type'] == 'SVM':
+            svc = SVC()
+            model = GridSearchCV(svc, svm_params, cv=ps, n_jobs=3, pre_dispatch=3*8, verbose=config['SVM_verbose']).fit(x, y)
+            print('[SVM] Best score of ' + str(model.best_score_) + ': ' + str(model.best_params_))
+            f.write('[SVM]Best score of ' + str(model.best_score_) + ': ' + str(model.best_params_))
+        elif config['model_type'] == 'MLP':
+            mlp = MLPClassifier(hidden_layer_sizes=(20,), max_iter=600, verbose=10, early_stopping=False)
+            scores = cross_val_score(mlp, x, y, cv=ps, scoring='accuracy')
+            print('[MLP] best score: ' + str(scores.mean()))
+            f.write('[MLP] best score: ' + str(scores.mean()))
+        elif config['model_type'] == 'linear':
+            linear_model = linear_model.SGDClassifier()
+            scores = cross_val_score(linear_model, x, y, cv=ps, scoring='accuracy')
+            print('[linear] best score: ' + str(scores.mean()))
+            f.write('[linear] best score: ' + str(scores.mean()))
+        elif config['model_type'] == 'KNN':
+            score_max = 0
+            k_near = -1
+            for k in neighbors:
+                knn = KNeighborsClassifier(n_neighbors=k)
+                scores = cross_val_score(knn, x, y, cv=ps, scoring='accuracy')
+                if scores.mean() > score_max:
+                    k_near = k
+                    score_max = scores.mean()
+            print('[KNN] best score: ' + str(score_max) + ' with k = ' + str(k_near))
+            f.write('[KNN] best score: ' + str(score_max) + ' with k = ' + str(k_near))
 
-        print('Storing results..')        
-        f.write('Best score of ' + str(svm.best_score_) + ': ' + str(svm.best_params_))
+        print(config)
         f.write(str(config))
 
     elif config['audios_list'] == False:

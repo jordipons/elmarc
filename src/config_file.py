@@ -51,13 +51,13 @@ config_main = {
         'n_frames': 1376, # GTZAN: 1404, OLD: 1360, BALLROOM: 1376, US8K: 101/188
         'batch_size': 5,
 
-        #'architecture': 'cnn_small_filters',
-        #'num_filters': 717, # 717 or 32
-        #'selected_features_list': [0, 1, 2, 3, 4]
+        'architecture': 'cnn_small_filters',
+        'num_filters': 717, # 717 or 32
+        'selected_features_list': [0, 1, 2, 3, 4]
 
-        'architecture': 'cnn_music',
-        'num_filters': 256, # 256, 128, 64, 32, 16, 8 or 4
-        'selected_features_list': [1] # timbral [0], temporal [1] or both [0, 1]
+        #'architecture': 'cnn_music',
+        #'num_filters': 128, # 256, 128, 64, 32, 16, 8 or 4
+        #'selected_features_list': [0,1] # timbral [0], temporal [1] or both [0, 1]
     },
 
     'MFCC': {
