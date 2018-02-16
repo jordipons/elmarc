@@ -343,12 +343,12 @@ if __name__ == '__main__':
             print('[SVM] Best score of ' + str(model.best_score_) + ': ' + str(model.best_params_))
             f.write('[SVM]Best score of ' + str(model.best_score_) + ': ' + str(model.best_params_))
         elif config['model_type'] == 'linearSVM':
-            linSVM = LinearSVC(C=0.1)
+            linSVM = LinearSVC(C=config['C_SVM'])
             scores = cross_val_score(linSVM, x, y, cv=ps, scoring='accuracy')
             print('[linSVM] best score: ' + str(scores.mean()))
             f.write('[linSVM] best score: ' + str(scores.mean()))
         elif config['model_type'] == 'ELM':
-            rl = RandomLayer(n_hidden=400)
+            rl = RandomLayer(n_hidden=config['ELM_hidden_nodes'])
             elm = GenELMClassifier( hidden_layer = rl )
             scores = cross_val_score(elm, x, y, cv=ps, scoring='accuracy')
             print('[ELM] best score: ' + str(scores.mean()))
@@ -390,9 +390,9 @@ if __name__ == '__main__':
             model = SVC()
             model.set_params(**hps.best_params_)
         elif config['model_type'] == 'linearSVM':
-            model = LinearSVC(C=0.1)
+            model = LinearSVC(C=config['C_SVM'])
         elif config['model_type'] == 'ELM':
-            rl = RandomLayer(n_hidden=400)
+            rl = RandomLayer(n_hidden=config['ELM_hidden_nodes'])
             model = GenELMClassifier( hidden_layer = rl )
         elif config['model_type'] == 'MLP':
             model = MLPClassifier(hidden_layer_sizes=(20,), max_iter=600, verbose=10, early_stopping=False)
@@ -423,12 +423,12 @@ if __name__ == '__main__':
             print('[SVM] Best score of ' + str(model.best_score_) + ': ' + str(model.best_params_))
             f.write('[SVM]Best score of ' + str(model.best_score_) + ': ' + str(model.best_params_))
         elif config['model_type'] == 'linearSVM':
-            linSVM = LinearSVC(C=0.1)
-            scores = cross_val_score(linSVM, x, y, cv=2, scoring='accuracy') # CV=100!!
+            linSVM = LinearSVC(C=config['C_SVM'])
+            scores = cross_val_score(linSVM, x, y, cv=10, scoring='accuracy')
             print('[linSVM] best score: ' + str(scores.mean()))
             f.write('[linSVM] best score: ' + str(scores.mean()))
         elif config['model_type'] == 'ELM':
-            rl = RandomLayer(n_hidden=400)
+            rl = RandomLayer(n_hidden=config['ELM_hidden_nodes'])
             elm = GenELMClassifier( hidden_layer = rl )
             scores = cross_val_score(elm, x, y, cv=10, scoring='accuracy')
             print('[ELM] best score: ' + str(scores.mean()))
