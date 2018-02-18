@@ -64,10 +64,10 @@ def iterate_minibatches(prefix, audio_paths_list, batchsize):
             file_path = file_path[:-1] # remove /n
             print(str(i) + ': ' + file_path)
             if first:
-                data = compute_spectrogram(file_path,config['sampling_rate'])
+                data = compute_input(file_path,config['sampling_rate'])
                 first = False
             else:
-                data = np.append(data,compute_spectrogram(file_path,config['sampling_rate']), axis=0)
+                data = np.append(data,compute_input(file_path,config['sampling_rate']), axis=0)
             ground_truth.append(datasets.path2gt(file_path, config['dataset']))
             data_names.append(file_path)
         yield data, ground_truth, data_names
@@ -81,10 +81,10 @@ def iterate_minibatches(prefix, audio_paths_list, batchsize):
             file_path = file_path[:-1] # remove /n
             print(str(i) + ': ' + file_path)
             if first:
-                data = compute_spectrogram(file_path,config['sampling_rate'])
+                data = compute_input(file_path,config['sampling_rate'])
                 first = False
             else:
-                data = np.append(data,compute_spectrogram(file_path,config['sampling_rate']), axis=0)
+                data = np.append(data,compute_input(file_path,config['sampling_rate']), axis=0)
             ground_truth.append(datasets.path2gt(file_path, config['dataset']))
             data_names.append(file_path)
         yield data, ground_truth, data_names
@@ -110,9 +110,9 @@ def format_cnn_data(prefix, list_audios):
             tmp_features = np.zeros((len(feature_maps),feature_maps[0].shape[-1]))
             for i in range(len(feature_maps)): # for every bunch of extracted features
                 for m in range(feature_maps[i].shape[-1]): # for every feature-map
-                    if len(feature_maps[i].shape) == 3:
+                    if len(feature_maps[i].shape) == 3: # compute mean 1D-feature map
                         tmp_features[i, m] = np.mean(np.squeeze(feature_maps[i][j, :, m]))
-                    elif len(feature_maps[i].shape) == 4:
+                    elif len(feature_maps[i].shape) == 4: # compute mean 2D-feature map
                         tmp_features[i, m] = np.mean(np.squeeze(feature_maps[i][j, :, :, m]))
             X.append(tmp_features)
             Y.append(batch[1][j]) 
@@ -123,10 +123,12 @@ def format_cnn_data(prefix, list_audios):
     return X, Y, ID
 
 
-def compute_spectrogram(audio_path, sampling_rate):
+def compute_input(audio_path, sampling_rate):
     # compute spectrogram
     audio, sr = librosa.load(audio_path, sr=sampling_rate)
-    audio_rep = librosa.feature.melspectrogram(y=audio,
+
+    if config['CNN']['signal'] == 'spectrogram':
+        audio_rep = librosa.feature.melspectrogram(y=audio,
                                                sr=sampling_rate,
                                                hop_length=256,
                                                n_fft=512,
@@ -134,29 +136,34 @@ def compute_spectrogram(audio_path, sampling_rate):
                                                power=2,
                                                fmin=0.0,
                                                fmax=6000.0).T
-    # normalize audio representation
-    print(audio_rep.shape)
-    src = librosa.core.logamplitude(audio_rep)
+        # normalize audio representation
+        print(audio_rep.shape)
+        src = librosa.core.logamplitude(audio_rep)
     
-    # zero-pad, repeat-pad and corpping are different in CNNs for having fixed-lengths patches in CNNs
-    if len(src) < config['CNN']['n_frames']:
-        if config['fix_length_by'] == 'zero-pad':
-            print('Zero padding!')
-            src_zeros = np.zeros((config['CNN']['n_frames'],config['CNN']['n_mels']))
-            src_zeros[:len(src)] = src
-            src = src_zeros
+        # zero-pad, repeat-pad and corpping are different in CNNs for having fixed-lengths patches in CNNs
+        if len(src) < config['CNN']['n_frames']:
+            if config['fix_length_by'] == 'zero-pad':
+                print('Zero padding!')
+                src_zeros = np.zeros((config['CNN']['n_frames'],config['CNN']['n_mels']))
+                src_zeros[:len(src)] = src
+                src = src_zeros
 
-        elif config['fix_length_by'] == 'repeat-pad' and len(src) < config['CNN']['n_frames']:
-            print('Repeat and crop to the fixed_length!')
-            src_repeat = src
-            while (src_repeat.shape[0] < config['CNN']['n_frames']):
-                src_repeat = np.concatenate((src_repeat, src), axis=0)    
-            src = src_repeat
+            elif config['fix_length_by'] == 'repeat-pad' and len(src) < config['CNN']['n_frames']:
+                print('Repeat and crop to the fixed_length!')
+                src_repeat = src
+                while (src_repeat.shape[0] < config['CNN']['n_frames']):
+                    src_repeat = np.concatenate((src_repeat, src), axis=0)    
+                src = src_repeat
+                src = src[:config['CNN']['n_frames'], :]
+        elif len(src) > config['CNN']['n_frames']:
+            print('Cropping audio!')
             src = src[:config['CNN']['n_frames'], :]
-    elif len(src) > config['CNN']['n_frames']:
+    
+    elif config['CNN']['signal'] == 'waveform':
         print('Cropping audio!')
-        src = src[:config['CNN']['n_frames'], :]
-     
+        audio = audio[:config['CNN']['n_samples']]
+        src = np.expand_dims(audio, axis=1)  # let the matrix be
+    
     audio_rep = np.expand_dims(src, axis=0) # let the tensor be
     return audio_rep
 
@@ -234,9 +241,9 @@ if __name__ == '__main__':
     if config['features_type'] == 'MFCC':
         experiment_name = str(config['experiment_name']) + '_MFCC_' + str(int(time.time()))
     elif config['features_type'] == 'CNN':
-        experiment_name = str(config['experiment_name']) + '_CNN_' + str(config['CNN']['n_mels']) \
-            + '_' + str(config['CNN']['n_frames']) + '_' + str(config['CNN']['batch_size']) \
-            + '_' + str(config['CNN']['architecture']) + '_' + str(config['CNN']['num_filters']) \
+        experiment_name = str(config['experiment_name']) + '_CNN_' \
+            + '_' + str(config['CNN']['batch_size']) \
+            + '_' + str(config['CNN']['architecture']) + '_' \
             + '_' + str(config['CNN']['selected_features_list']) + '_'+ str(int(time.time()))
     print(experiment_name)
 
@@ -244,12 +251,11 @@ if __name__ == '__main__':
 
         print('Extracting features..')
         if config['features_type'] == 'CNN':
-            x_in = tf.placeholder(tf.float32, [None, None, config['CNN']['n_mels']])
+            if config['CNN']['signal'] == 'spectrogram':
+                x_in = tf.placeholder(tf.float32, [None, None, config['CNN']['n_mels']])
+            elif config['CNN']['signal'] == 'waveform':
+                x_in = tf.placeholder(tf.float32, [None, config['CNN']['n_samples'], 1])             
             features_definition = dl_models.build(config, x_in)
-            #if config['CNN']['architecture'] == 'cnn_small_filters':
-            #    features_definition = dl_models.cnn_small_filters(config, x_in)
-            #elif config['CNN']['architecture'] == 'cnn_music':
-            #    features_definition = dl_models.cnn_music(config, x_in)
             sess = tf.InteractiveSession()
             sess.run(tf.global_variables_initializer())
             print('Number of parameters of the model: ' + str(

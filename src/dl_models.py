@@ -7,6 +7,12 @@ def build(config, x_in):
         return cnn_single(config, x_in)
     elif config['CNN']['architecture'] == 'cnn_music':
         return cnn_music(config, x_in)
+    elif config['CNN']['architecture'] == 'sample_level':
+        return sample_level(config, x_in)
+    elif config['CNN']['architecture'] == 'frame_level':
+        return frame_level(config, x_in)
+    elif config['CNN']['architecture'] == 'frame_level_many':
+        return frame_level_many(config, x_in)
     # + backend!
 
 def cnn_small_filters(config, x_in):
@@ -256,13 +262,11 @@ def cnn_music(config, x_in):
     return [timbral, temporal]
 
 
-def backend(route_out, is_training, config, num_units):
+def backend(route_out, config):
     '''Function implementing the proposed back-end.
     - 'route_out': is the output of the front-end, and therefore the input of this function.
-    - 'is_training': placeholder indicating weather it is training or test phase, for dropout or batch norm.
     - 'config': dictionary with some configurable parameters like: number of output units - config['numOutputNeurons']
                 or number of frequency bins of the spectrogram config['setup_params']['yInput']
-    - 'num_units': number of units/neurons of the output dense layer.
     '''
 
     # conv layer 1 - adapting dimensions
@@ -276,7 +280,7 @@ def backend(route_out, is_training, config, num_units):
     conv1_t = tf.transpose(conv1, [0, 1, 3, 2])
 
     # conv layer 2 - residual connection
-    bn_conv1_pad = tf.pad(bn_conv1_t, [[0, 0], [3, 3], [0, 0], [0, 0]], "CONSTANT")
+    bn_conv1_pad = tf.pad(conv1_t, [[0, 0], [3, 3], [0, 0], [0, 0]], "CONSTANT")
     conv2 = tf.layers.conv2d(inputs=bn_conv1_pad,
                              filters=512,
                              kernel_size=[7, bn_conv1_pad.shape[2]],
@@ -303,3 +307,141 @@ def backend(route_out, is_training, config, num_units):
     res_conv5 = tf.add(conv5_t, pool1)
 
     return [conv1_t, res_conv2, res_conv5]   
+
+def sample_level(config, x_in):
+    '''Function implementing the front-end proposed by Lee et al. 2017.
+       Lee, et al. "Sample-level Deep Convolutional Neural Networks for Music Auto-tagging Using Raw Waveforms." 
+       arXiv preprint arXiv:1703.01789 (2017).
+    - 'x': placeholder whith the input.
+    - 'is_training': placeholder indicating weather it is training or test phase, for dropout or batch norm.
+    '''
+    conv0 = tf.layers.conv1d(inputs=x_in,
+                             filters=64,
+                             kernel_size=3,
+                             strides=3,
+                             padding="valid",
+                             kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
+
+    conv1 = tf.layers.conv1d(inputs=conv0,
+                             filters=64,
+                             kernel_size=3,
+                             strides=1,
+                             padding="valid",
+                             kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
+    pool_1 = tf.layers.max_pooling1d(conv1, pool_size=3, strides=3)
+
+    conv2 = tf.layers.conv1d(inputs=pool_1,
+                             filters=64,
+                             kernel_size=3,
+                             strides=1, 
+                             padding="valid",
+                             kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
+    pool_2 = tf.layers.max_pooling1d(conv2, pool_size=3, strides=3)
+
+    conv3 = tf.layers.conv1d(inputs=pool_2,
+                             filters=64, # CHANGE NUMBER OF FILTERS?
+                             kernel_size=3,
+                             strides=1,
+                             padding="valid",
+                             kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
+    pool_3 = tf.layers.max_pooling1d(conv3, pool_size=3, strides=3)
+
+    conv4 = tf.layers.conv1d(inputs=pool_3,
+                             filters=64, # CHANGE NUMBER OF FILTERS?
+                             kernel_size=3,
+                             strides=1,
+                             padding="valid",
+                             kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
+    pool_4 = tf.layers.max_pooling1d(conv4, pool_size=3, strides=3)
+
+    conv5 = tf.layers.conv1d(inputs=pool_4,
+                             filters=64, # CHANGE NUMBER OF FILTERS?
+                             kernel_size=3,
+                             strides=1,
+                             padding="valid",
+                             kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
+    pool_5 = tf.layers.max_pooling1d(conv5, pool_size=3, strides=3)
+
+    conv6 = tf.layers.conv1d(inputs=pool_5,
+                             filters=64, # CHANGE NUMBER OF FILTERS?
+                             kernel_size=3,
+                             strides=1,
+                             padding="valid",
+                             kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
+    pool_6 = tf.layers.max_pooling1d(conv6, pool_size=3, strides=3)
+
+    print(pool_1.get_shape)
+    print(pool_2.get_shape)
+    print(pool_3.get_shape)
+    print(pool_4.get_shape)
+    print(pool_5.get_shape)
+    print(pool_6.get_shape)
+
+    return [pool_1, pool_2, pool_3, pool_4, pool_5, pool_6]
+
+def frame_level(config, x_in):
+
+    conv1 = tf.layers.conv1d(inputs=x_in,
+                             filters=1024,
+                             kernel_size=512,
+                             strides=32,
+                             padding="valid",
+                             kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
+
+    front_end_out = tf.expand_dims(conv1, 3)
+    [end_c1, end_cr2, end_cr3] = backend(front_end_out, config)
+
+    return [conv1, end_c1, end_cr2, end_cr3] 
+
+def frame_level_many(config, x_in):
+    conv0 = tf.layers.conv1d(inputs=x_in,
+                             filters=64,
+                             kernel_size=512,
+                             strides=32,
+                             padding="same",
+                             kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
+
+    conv1 = tf.layers.conv1d(inputs=x_in,
+                             filters=64,
+                             kernel_size=256,
+                             strides=32,
+                             padding="same",
+                             kernel_initializer=tf.contrib.layers.variance_scaling_initializer())  
+
+    conv2 = tf.layers.conv1d(inputs=x_in,
+                             filters=64,
+                             kernel_size=128,
+                             strides=32,
+                             padding="same",
+                             kernel_initializer=tf.contrib.layers.variance_scaling_initializer())  
+
+    conv3 = tf.layers.conv1d(inputs=x_in,
+                             filters=64,
+                             kernel_size=64,
+                             strides=32,
+                             padding="same",
+                             kernel_initializer=tf.contrib.layers.variance_scaling_initializer())  
+
+    conv4 = tf.layers.conv1d(inputs=x_in,
+                             filters=64,
+                             kernel_size=32,
+                             strides=32,
+                             padding="same",
+                             kernel_initializer=tf.contrib.layers.variance_scaling_initializer())  
+
+    many = tf.concat([conv0, conv1, conv2, conv3, conv4], 2)
+    front_end_out = tf.expand_dims(many, 3)
+
+    [end_c1, end_cr2, end_cr3] = backend(front_end_out, config)
+
+    print(x_in.get_shape)
+    print(conv0.get_shape)
+    print(conv1.get_shape)
+    print(conv2.get_shape)
+    print(conv3.get_shape)
+    print(conv4.get_shape)
+    print(end_c1.get_shape)
+    print(end_cr2.get_shape)
+    print(end_cr3.get_shape)
+
+    return [conv0, conv1, conv2, conv3, conv4, end_c1, end_cr2, end_cr3] 
