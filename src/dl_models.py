@@ -391,6 +391,11 @@ def frame_level(config, x_in):
     front_end_out = tf.expand_dims(conv1, 3)
     [end_c1, end_cr2, end_cr3] = backend(front_end_out, config)
 
+    print(conv1.get_shape)
+    print(end_c1.get_shape)
+    print(end_cr2.get_shape)
+    print(end_cr3.get_shape)
+
     return [conv1, end_c1, end_cr2, end_cr3] 
 
 def frame_level_many(config, x_in):

@@ -34,12 +34,12 @@ svm_params = [
 
 ]
 
-#svm_params = [
-#    {'kernel': ['linear'],
-#     'C': [0.1, 2.0]}
-#]
-
-neighbors = [1,3,5,10,20,30,50,100]
+if config['model_type'] == 'linearSVM':
+    hyperparameters = [0.1, 1.0, 2.0]
+elif config['model_type'] == 'ELM':
+    hyperparameters = [1200, 1800, 2500]
+elif config['model_type'] == 'KNN':
+    hyperparameters = [1,3,5,10,20,30,50,100]
 
 #------#
 # CNNs #
@@ -148,21 +148,39 @@ def compute_input(audio_path, sampling_rate):
                 src_zeros[:len(src)] = src
                 src = src_zeros
 
-            elif config['fix_length_by'] == 'repeat-pad' and len(src) < config['CNN']['n_frames']:
+            elif config['fix_length_by'] == 'repeat-pad':
                 print('Repeat and crop to the fixed_length!')
                 src_repeat = src
                 while (src_repeat.shape[0] < config['CNN']['n_frames']):
                     src_repeat = np.concatenate((src_repeat, src), axis=0)    
                 src = src_repeat
                 src = src[:config['CNN']['n_frames'], :]
-        elif len(src) > config['CNN']['n_frames']:
+        else:
             print('Cropping audio!')
             src = src[:config['CNN']['n_frames'], :]
     
     elif config['CNN']['signal'] == 'waveform':
-        print('Cropping audio!')
-        audio = audio[:config['CNN']['n_samples']]
-        src = np.expand_dims(audio, axis=1)  # let the matrix be
+
+        # zero-pad, repeat-pad and corpping are different in CNNs for having fixed-lengths patches in CNNs
+        if len(audio) < config['CNN']['n_samples']:
+            if config['fix_length_by'] == 'zero-pad':
+                print('Zero padding!')
+                src_zeros = np.zeros(config['CNN']['n_samples'])
+                src_zeros[:len(audio)] = audio
+                src = src_zeros
+
+            elif config['fix_length_by'] == 'repeat-pad':
+                print('Repeat and crop to the fixed_length!')
+                src_repeat = audio
+                while (len(src_repeat) < config['CNN']['n_samples']):
+                    src_repeat = np.concatenate((src_repeat, audio), axis=0)    
+                src = src_repeat
+                src = src[:config['CNN']['n_samples']]
+        else:
+            print('Cropping audio!')
+            src = audio[:config['CNN']['n_samples']]
+
+        src = np.expand_dims(src, axis=1)  # let the matrix be
     
     audio_rep = np.expand_dims(src, axis=0) # let the tensor be
     return audio_rep
@@ -227,6 +245,24 @@ def format_mfcc_data(prefix, list_audios):
         print(Y)
         print(np.array(X).shape)
     return X, Y, ID
+
+
+#-----------------------#
+# CLASSIFICATION MODELS #
+#-----------------------#
+
+def define_classification_model(h):
+    if config['model_type'] == 'linearSVM':
+        return LinearSVC(C=h)
+    elif config['model_type'] == 'ELM':
+        rl = RandomLayer(n_hidden=h)
+        return GenELMClassifier(hidden_layer = rl)
+    elif config['model_type'] == 'MLP':
+        return MLPClassifier(hidden_layer_sizes=(20,), max_iter=600, verbose=10, early_stopping=False)
+    elif config['model_type'] == 'linear':
+        return linear_model.SGDClassifier()
+    elif config['model_type'] == 'KNN':
+        return KNeighborsClassifier(n_neighbors=h)
 
 
 if __name__ == '__main__':
@@ -334,132 +370,85 @@ if __name__ == '__main__':
         os.makedirs(config['results_folder'])
     f = open(config['results_folder'] + experiment_name + '.txt','w')
 
-    if config['dataset'] == 'UrbanSound8K':
-        print('UrbanSound8K dataset with pre-defined splits!')
-        df = pd.read_csv('/datasets/MTG/users/jpons/urban_sounds/UrbanSound8K/metadata/UrbanSound8K.csv')
-        folds_mask = []
-        for i in ids:
-            tag = i[i.rfind('/')+1:]
-            folds_mask.append(int(df[df.slice_file_name==tag].fold))
-        ps = PredefinedSplit(test_fold=folds_mask)
-        
+    if config['audios_list'] == False:
+        print('train/val/test partitions are pre-defined!')
+        if config['model_type'] == 'SVM':
+            # hyperparameter search in val set
+            x_dev = np.concatenate((x_train, x_val), axis=0)
+            y_dev = np.concatenate((y_train, y_val), axis=0)
+            val_mask = np.concatenate((-np.ones(len(y_train)), np.zeros(len(y_val))), axis=0)
+            ps = PredefinedSplit(test_fold=val_mask)
+            svc = SVC()
+            hps = GridSearchCV(svc, svm_params, cv=ps, n_jobs=3, pre_dispatch=3*8, verbose=config['SVM_verbose']).fit(x_dev, y_dev)
+            # train final model
+            model = SVC()
+            model.set_params(**hps.best_params_)
+        else:
+            score_max = 0
+            h_max = -1
+            for h in hyperparameters: # select best params in validation set
+                print('Now in: ' + str(h))
+                model = define_classification_model(h)
+                model.fit(x_train, y_train) 
+                score = accuracy_score(y_val, model.predict(x_val))
+                print('- Score: ' + str(score))
+                if score > score_max:
+                    score_max = score
+                    h_max = h
+
+        # train model with best hyper parameters and evaluate in test set
+        model = define_classification_model(h_max)
+        model.fit(x_train, y_train)
+        y_pred = model.predict(x_test)
+        print('Detailed classification report: ')
+        print(classification_report(y_test, y_pred))
+        print('Accuracy test set: ')
+        print(accuracy_score(y_test, y_pred))
+        print('Accuracy val set: ' + str(score_max))
+        print('Best hyperparameter: ' + str(h_max))
+        print(config)
+
+        print('Storing results..')   
+        f.write(str(classification_report(y_test, y_pred)))     
+        f.write('Accuracy test set: ' + str(accuracy_score(y_test, y_pred)) + '\n')
+        f.write('Accuracy val set: ' + str(score_max))
+        f.write('Best hyperparameter: ' + str(h_max))
+        f.write(str(config))
+
+    else:
+        print('10 fold cross-validation!')
+
+        if config['dataset'] == 'UrbanSound8K':
+            print('UrbanSound8K dataset with pre-defined splits!')
+            df = pd.read_csv('/datasets/MTG/users/jpons/urban_sounds/UrbanSound8K/metadata/UrbanSound8K.csv')
+            folds_mask = []
+            for i in ids:
+                tag = i[i.rfind('/')+1:]
+                folds_mask.append(int(df[df.slice_file_name==tag].fold))
+            ps = PredefinedSplit(test_fold=folds_mask)
+
+        else:
+            ps = 10
+
         if config['model_type'] == 'SVM':
             svc = SVC()
             model = GridSearchCV(svc, svm_params, cv=ps, n_jobs=3, pre_dispatch=3*8, verbose=config['SVM_verbose']).fit(x, y)
             print('[SVM] Best score of ' + str(model.best_score_) + ': ' + str(model.best_params_))
             f.write('[SVM]Best score of ' + str(model.best_score_) + ': ' + str(model.best_params_))
-        elif config['model_type'] == 'linearSVM':
-            linSVM = LinearSVC(C=config['C_SVM'])
-            scores = cross_val_score(linSVM, x, y, cv=ps, scoring='accuracy')
-            print('[linSVM] best score: ' + str(scores.mean()))
-            f.write('[linSVM] best score: ' + str(scores.mean()))
-        elif config['model_type'] == 'ELM':
-            rl = RandomLayer(n_hidden=config['ELM_hidden_nodes'])
-            elm = GenELMClassifier( hidden_layer = rl )
-            scores = cross_val_score(elm, x, y, cv=ps, scoring='accuracy')
-            print('[ELM] best score: ' + str(scores.mean()))
-            f.write('[ELM] best score: ' + str(scores.mean()))
-        elif config['model_type'] == 'MLP':
-            mlp = MLPClassifier(hidden_layer_sizes=(20,), max_iter=600, verbose=10, early_stopping=False)
-            scores = cross_val_score(mlp, x, y, cv=ps, scoring='accuracy')
-            print('[MLP] best score: ' + str(scores.mean()))
-            f.write('[MLP] best score: ' + str(scores.mean()))
-        elif config['model_type'] == 'linear':
-            linear_model = linear_model.SGDClassifier()
-            scores = cross_val_score(linear_model, x, y, cv=ps, scoring='accuracy')
-            print('[linear] best score: ' + str(scores.mean()))
-            f.write('[linear] best score: ' + str(scores.mean()))
-        elif config['model_type'] == 'KNN':
+
+        else:
             score_max = 0
-            k_near = -1
-            for k in neighbors:
-                knn = KNeighborsClassifier(n_neighbors=k)
-                scores = cross_val_score(knn, x, y, cv=ps, scoring='accuracy')
+            h_max = -1
+            for h in hyperparameters:
+                print('Now in: ' + str(h))
+                model = define_classification_model(h)
+                scores = cross_val_score(model, x, y, cv=ps, scoring='accuracy')
+                print('- Score: ' + str(scores.mean()))
                 if scores.mean() > score_max:
-                    k_near = k
+                    h_max = h
                     score_max = scores.mean()
-            print('[KNN] best score: ' + str(score_max) + ' with k = ' + str(k_near))
-            f.write('[KNN] best score: ' + str(score_max) + ' with k = ' + str(k_near))
-
-        print(config)
-        f.write(str(config))
-
-    elif config['audios_list'] == False:
-        print('train/val/test partitions are pre-defined!')
-        x_dev = np.concatenate((x_train, x_val), axis=0)
-        y_dev = np.concatenate((y_train, y_val), axis=0)
-        val_mask = np.concatenate((-np.ones(len(y_train)), np.zeros(len(y_val))), axis=0)
-        ps = PredefinedSplit(test_fold=val_mask)
-        if config['model_type'] == 'SVM':
-            svc = SVC()
-            hps = GridSearchCV(svc, svm_params, cv=ps, n_jobs=3, pre_dispatch=3*8, verbose=config['SVM_verbose']).fit(x_dev, y_dev)
-            model = SVC()
-            model.set_params(**hps.best_params_)
-        elif config['model_type'] == 'linearSVM':
-            model = LinearSVC(C=config['C_SVM'])
-        elif config['model_type'] == 'ELM':
-            rl = RandomLayer(n_hidden=config['ELM_hidden_nodes'])
-            model = GenELMClassifier( hidden_layer = rl )
-        elif config['model_type'] == 'MLP':
-            model = MLPClassifier(hidden_layer_sizes=(20,), max_iter=600, verbose=10, early_stopping=False)
-        elif config['model_type'] == 'linear':
-            model = linear_model.SGDClassifier()
-        elif config['model_type'] == 'KNN':
-            model = KNeighborsClassifier(n_neighbors=30)
-
-        model.fit(x_train, y_train)  
-        y_true, y_pred = y_test, model.predict(x_test)
-
-        print('Detailed classification report: ')
-        print(classification_report(y_true, y_pred))
-        print('Accuracy test set: ')
-        print(accuracy_score(y_test, model.predict(x_test)))
-        print(config)
-
-        print('Storing results..')   
-        f.write(str(classification_report(y_true, y_pred)))     
-        f.write('Accuracy: ' + str(accuracy_score(y_test, model.predict(x_test))) + '\n')
-        f.write(str(config))
-
-    else:
-        print('10 fold cross-validation!')
-        if config['model_type'] == 'SVM':
-            svc = SVC()
-            model = GridSearchCV(svc, svm_params, cv=10, n_jobs=3, pre_dispatch=3*8, verbose=config['SVM_verbose']).fit(x, y)
-            print('[SVM] Best score of ' + str(model.best_score_) + ': ' + str(model.best_params_))
-            f.write('[SVM]Best score of ' + str(model.best_score_) + ': ' + str(model.best_params_))
-        elif config['model_type'] == 'linearSVM':
-            linSVM = LinearSVC(C=config['C_SVM'])
-            scores = cross_val_score(linSVM, x, y, cv=10, scoring='accuracy')
-            print('[linSVM] best score: ' + str(scores.mean()))
-            f.write('[linSVM] best score: ' + str(scores.mean()))
-        elif config['model_type'] == 'ELM':
-            rl = RandomLayer(n_hidden=config['ELM_hidden_nodes'])
-            elm = GenELMClassifier( hidden_layer = rl )
-            scores = cross_val_score(elm, x, y, cv=10, scoring='accuracy')
-            print('[ELM] best score: ' + str(scores.mean()))
-            f.write('[ELM] best score: ' + str(scores.mean()))
-        elif config['model_type'] == 'MLP':
-            mlp = MLPClassifier(hidden_layer_sizes=(20,), max_iter=600, verbose=10, early_stopping=False)
-            scores = cross_val_score(mlp, x, y, cv=10, scoring='accuracy')
-            print('[MLP] best score: ' + str(scores.mean()))
-            f.write('[MLP] best score: ' + str(scores.mean()))
-        elif config['model_type'] == 'linear':
-            linear_model = linear_model.SGDClassifier()
-            scores = cross_val_score(linear_model, x, y, cv=10, scoring='accuracy')
-            print('[linear] best score: ' + str(scores.mean()))
-            f.write('[linear] best score: ' + str(scores.mean()))
-        elif config['model_type'] == 'KNN':
-            score_max = 0
-            k_near = -1
-            for k in neighbors:
-                knn = KNeighborsClassifier(n_neighbors=k)
-                scores = cross_val_score(knn, x, y, cv=10, scoring='accuracy')
-                if scores.mean() > score_max:
-                    k_near = k
-                    score_max = scores.mean()
-            print('[KNN] best score: ' + str(score_max) + ' with k = ' + str(k_near))
-            f.write('[KNN] best score: ' + str(score_max) + ' with k = ' + str(k_near))
+            print(config['model_type'] + ' - best score: ' + str(score_max) + ' with ' + str(h_max))
+            f.write(config['model_type'] + ' - best score: ' + str(score_max) + ' with ' + str(h_max))
 
         print(config)
         f.write(str(config))

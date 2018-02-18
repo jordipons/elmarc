@@ -2,7 +2,7 @@ config_main = {
 
     'experiment_name': 'v0',
     'features_type': 'CNN', # CNN or MFCC
-    'model_type': 'linearSVM', # linearSVM, ELM, SVM, MLP, KNN or linear
+    'model_type': 'ELM', # linearSVM, ELM, SVM, MLP, KNN or linear
     'load_extracted_features': False,
     'sampling_rate': 12000,
 
@@ -26,25 +26,25 @@ config_main = {
     #'audios_list': '/datasets/MTG/users/jpons/ballroom/allBallroomFiles.txt',
     #'fix_length_by': 'crop', # 'zero-pad', 'repeat-pad' or 'crop'
 
-    'dataset': 'GTZAN',
-    'audio_path': '/datasets/MTG/users/jpons/GTZAN/',
-    'save_extracted_features_folder': '../data/GTZAN/features/',
-    'results_folder': '../data/GTZAN/results/',
-    'train_set_list': '/datasets/MTG/users/jpons/GTZAN_debug_partitions/train_filtered.txt',
-    'val_set_list': '/datasets/MTG/users/jpons/GTZAN_debug_partitions/valid_filtered.txt',
-    'test_set_list': '/datasets/MTG/users/jpons/GTZAN_debug_partitions/test_filtered.txt',
-    'audios_list': False,
-    'fix_length_by': 'crop', # 'zero-pad', 'repeat-pad' or 'crop'
+    #'dataset': 'GTZAN',
+    #'audio_path': '/datasets/MTG/users/jpons/GTZAN/',
+    #'save_extracted_features_folder': '../data/GTZAN/features/',
+    #'results_folder': '../data/GTZAN/results/',
+    #'train_set_list': '/datasets/MTG/users/jpons/GTZAN_debug_partitions/train_filtered.txt',
+    #'val_set_list': '/datasets/MTG/users/jpons/GTZAN_debug_partitions/valid_filtered.txt',
+    #'test_set_list': '/datasets/MTG/users/jpons/GTZAN_debug_partitions/test_filtered.txt',
+    #'audios_list': False,
+    #'fix_length_by': 'crop', # 'zero-pad', 'repeat-pad' or 'crop'
 
-    #'dataset': 'UrbanSound8K',
-    #'audio_path': '/datasets/MTG/users/jpons/urban_sounds/UrbanSound8K/',
-    #'save_extracted_features_folder': '../data/UrbanSound8K/features/',
-    #'results_folder': '../data/UrbanSound8K/results/',
-    #'train_set_list': None,
-    #'val_set_list': None,
-    #'test_set_list': None,
-    #'audios_list': '/datasets/MTG/users/jpons/urban_sounds/UrbanSound8K/allFiles.txt',
-    #'fix_length_by': 'repeat-pad', # 'zero-pad', 'repeat-pad', 'crop' or False
+    'dataset': 'UrbanSound8K',
+    'audio_path': '/datasets/MTG/users/jpons/urban_sounds/UrbanSound8K/',
+    'save_extracted_features_folder': '../data/UrbanSound8K/features/',
+    'results_folder': '../data/UrbanSound8K/results/',
+    'train_set_list': None,
+    'val_set_list': None,
+    'test_set_list': None,
+    'audios_list': '/datasets/MTG/users/jpons/urban_sounds/UrbanSound8K/allFiles_debug.txt',
+    'fix_length_by': 'repeat-pad', # 'zero-pad', 'repeat-pad', 'crop' or False
 
     'CNN': {
         'batch_size': 5,
@@ -70,7 +70,7 @@ config_main = {
 
         ## WAVEFORM PARAMETERS ##
         'signal': 'waveform',
-        'n_samples': 36000,
+        'n_samples': 4*12000, # min: 5000 - US8K: 4*12000, other: 4*12000*7.3
 
         'architecture': 'frame_level', # sample_level, frame_level or frame_level_many
         'selected_features_list': [0, 1, 2, 3], # [0, 1, 2, 3, 4, 5, 6, 7]
