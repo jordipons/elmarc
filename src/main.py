@@ -37,7 +37,8 @@ svm_params = [
 if config['model_type'] == 'linearSVM':
     hyperparameters = [0.1, 1.0, 2.0]
 elif config['model_type'] == 'ELM':
-    hyperparameters = [1200, 1800, 2500]
+    #hyperparameters = [1200, 1800, 2500]
+    hyperparameters = [50, 100, 250, 500, 750]
 elif config['model_type'] == 'KNN':
     hyperparameters = [1,3,5,10,20,30,50,100]
 
@@ -278,8 +279,9 @@ if __name__ == '__main__':
         experiment_name = str(config['experiment_name']) + '_MFCC_' + str(int(time.time()))
     elif config['features_type'] == 'CNN':
         experiment_name = str(config['experiment_name']) + '_CNN_' \
-            + '_' + str(config['CNN']['batch_size']) \
-            + '_' + str(config['CNN']['architecture']) + '_' \
+            + '_' + str(config['model_type']) \
+            + '_' + str(config['CNN']['signal']) \
+            + '_' + str(config['CNN']['architecture']) \
             + '_' + str(config['CNN']['selected_features_list']) + '_'+ str(int(time.time()))
     print(experiment_name)
 
@@ -380,7 +382,7 @@ if __name__ == '__main__':
             ps = PredefinedSplit(test_fold=val_mask)
             svc = SVC()
             hps = GridSearchCV(svc, svm_params, cv=ps, n_jobs=3, pre_dispatch=3*8, verbose=config['SVM_verbose']).fit(x_dev, y_dev)
-            # train final model
+            # define final model
             model = SVC()
             model.set_params(**hps.best_params_)
         else:
@@ -395,24 +397,25 @@ if __name__ == '__main__':
                 if score > score_max:
                     score_max = score
                     h_max = h
+                print('Accuracy val set: ' + str(score_max))
+                print('Best hyperparameter: ' + str(h_max))
+                f.write('Accuracy val set: ' + str(score_max) + '\n')
+                f.write('Best hyperparameter: ' + str(h_max))
+                model = define_classification_model(h_max)
 
-        # train model with best hyper parameters and evaluate in test set
-        model = define_classification_model(h_max)
+        # train model with best hyperparameters and evaluate in test set
         model.fit(x_train, y_train)
         y_pred = model.predict(x_test)
         print('Detailed classification report: ')
         print(classification_report(y_test, y_pred))
         print('Accuracy test set: ')
         print(accuracy_score(y_test, y_pred))
-        print('Accuracy val set: ' + str(score_max))
-        print('Best hyperparameter: ' + str(h_max))
+
         print(config)
 
         print('Storing results..')   
         f.write(str(classification_report(y_test, y_pred)))     
         f.write('Accuracy test set: ' + str(accuracy_score(y_test, y_pred)) + '\n')
-        f.write('Accuracy val set: ' + str(score_max))
-        f.write('Best hyperparameter: ' + str(h_max))
         f.write(str(config))
 
     else:
@@ -434,7 +437,7 @@ if __name__ == '__main__':
             svc = SVC()
             model = GridSearchCV(svc, svm_params, cv=ps, n_jobs=3, pre_dispatch=3*8, verbose=config['SVM_verbose']).fit(x, y)
             print('[SVM] Best score of ' + str(model.best_score_) + ': ' + str(model.best_params_))
-            f.write('[SVM]Best score of ' + str(model.best_score_) + ': ' + str(model.best_params_))
+            f.write('[SVM] Best score of ' + str(model.best_score_) + ': ' + str(model.best_params_))
 
         else:
             score_max = 0
@@ -447,8 +450,8 @@ if __name__ == '__main__':
                 if scores.mean() > score_max:
                     h_max = h
                     score_max = scores.mean()
-            print(config['model_type'] + ' - best score: ' + str(score_max) + ' with ' + str(h_max))
-            f.write(config['model_type'] + ' - best score: ' + str(score_max) + ' with ' + str(h_max))
+            print(config['model_type'] + ' - score of best model: ' + str(score_max) + ' with ' + str(h_max))
+            f.write(config['model_type'] + ' - score of best model: ' + str(score_max) + ' with ' + str(h_max))
 
         print(config)
         f.write(str(config))

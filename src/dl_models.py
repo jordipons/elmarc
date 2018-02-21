@@ -316,14 +316,14 @@ def sample_level(config, x_in):
     - 'is_training': placeholder indicating weather it is training or test phase, for dropout or batch norm.
     '''
     conv0 = tf.layers.conv1d(inputs=x_in,
-                             filters=64,
+                             filters=config['CNN']['num_filters'],
                              kernel_size=3,
                              strides=3,
                              padding="valid",
                              kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
 
     conv1 = tf.layers.conv1d(inputs=conv0,
-                             filters=64,
+                             filters=config['CNN']['num_filters'],
                              kernel_size=3,
                              strides=1,
                              padding="valid",
@@ -331,7 +331,7 @@ def sample_level(config, x_in):
     pool_1 = tf.layers.max_pooling1d(conv1, pool_size=3, strides=3)
 
     conv2 = tf.layers.conv1d(inputs=pool_1,
-                             filters=64,
+                             filters=config['CNN']['num_filters'],
                              kernel_size=3,
                              strides=1, 
                              padding="valid",
@@ -339,7 +339,7 @@ def sample_level(config, x_in):
     pool_2 = tf.layers.max_pooling1d(conv2, pool_size=3, strides=3)
 
     conv3 = tf.layers.conv1d(inputs=pool_2,
-                             filters=64, # CHANGE NUMBER OF FILTERS?
+                             filters=config['CNN']['num_filters'], # CHANGE NUMBER OF FILTERS?
                              kernel_size=3,
                              strides=1,
                              padding="valid",
@@ -347,7 +347,7 @@ def sample_level(config, x_in):
     pool_3 = tf.layers.max_pooling1d(conv3, pool_size=3, strides=3)
 
     conv4 = tf.layers.conv1d(inputs=pool_3,
-                             filters=64, # CHANGE NUMBER OF FILTERS?
+                             filters=config['CNN']['num_filters'], # CHANGE NUMBER OF FILTERS?
                              kernel_size=3,
                              strides=1,
                              padding="valid",
@@ -355,7 +355,7 @@ def sample_level(config, x_in):
     pool_4 = tf.layers.max_pooling1d(conv4, pool_size=3, strides=3)
 
     conv5 = tf.layers.conv1d(inputs=pool_4,
-                             filters=64, # CHANGE NUMBER OF FILTERS?
+                             filters=config['CNN']['num_filters'], # CHANGE NUMBER OF FILTERS?
                              kernel_size=3,
                              strides=1,
                              padding="valid",
@@ -363,7 +363,7 @@ def sample_level(config, x_in):
     pool_5 = tf.layers.max_pooling1d(conv5, pool_size=3, strides=3)
 
     conv6 = tf.layers.conv1d(inputs=pool_5,
-                             filters=64, # CHANGE NUMBER OF FILTERS?
+                             filters=config['CNN']['num_filters'], # CHANGE NUMBER OF FILTERS?
                              kernel_size=3,
                              strides=1,
                              padding="valid",
@@ -377,12 +377,12 @@ def sample_level(config, x_in):
     print(pool_5.get_shape)
     print(pool_6.get_shape)
 
-    return [pool_1, pool_2, pool_3, pool_4, pool_5, pool_6]
+    return [conv0, pool_1, pool_2, pool_3, pool_4, pool_5, pool_6]
 
 def frame_level(config, x_in):
 
     conv1 = tf.layers.conv1d(inputs=x_in,
-                             filters=1024,
+                             filters=config['CNN']['num_filters'],
                              kernel_size=512,
                              strides=32,
                              padding="valid",
@@ -400,35 +400,35 @@ def frame_level(config, x_in):
 
 def frame_level_many(config, x_in):
     conv0 = tf.layers.conv1d(inputs=x_in,
-                             filters=64,
+                             filters=config['CNN']['num_filters'],
                              kernel_size=512,
                              strides=32,
                              padding="same",
                              kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
 
     conv1 = tf.layers.conv1d(inputs=x_in,
-                             filters=64,
+                             filters=config['CNN']['num_filters'],
                              kernel_size=256,
                              strides=32,
                              padding="same",
                              kernel_initializer=tf.contrib.layers.variance_scaling_initializer())  
 
     conv2 = tf.layers.conv1d(inputs=x_in,
-                             filters=64,
+                             filters=config['CNN']['num_filters'],
                              kernel_size=128,
                              strides=32,
                              padding="same",
                              kernel_initializer=tf.contrib.layers.variance_scaling_initializer())  
 
     conv3 = tf.layers.conv1d(inputs=x_in,
-                             filters=64,
+                             filters=config['CNN']['num_filters'],
                              kernel_size=64,
                              strides=32,
                              padding="same",
                              kernel_initializer=tf.contrib.layers.variance_scaling_initializer())  
 
     conv4 = tf.layers.conv1d(inputs=x_in,
-                             filters=64,
+                             filters=config['CNN']['num_filters'],
                              kernel_size=32,
                              strides=32,
                              padding="same",
