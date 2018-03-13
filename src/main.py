@@ -37,8 +37,10 @@ svm_params = [
 if config['model_type'] == 'linearSVM':
     hyperparameters = [0.1, 1.0, 2.0]
 elif config['model_type'] == 'ELM':
-    #hyperparameters = [1200, 1800, 2500]
-    hyperparameters = [50, 100, 250, 500, 750]
+    hyperparameters = [100, 250, 500, 1200, 1800, 2500] # remove 100 and 250
+    #hyperparameters = [50, 100, 250, 500, 750]
+    #hyperparameters = ['tanh', 'sine', 'tribas', 'inv_tribas', 'sigmoid', 'hardlim', 'softlim', 'gaussian', 'multiquadric', 'inv_multiquadric', 'reclinear']
+    #hyperparameters = [alpha=0]
 elif config['model_type'] == 'KNN':
     hyperparameters = [1,3,5,10,20,30,50,100]
 
@@ -256,7 +258,7 @@ def define_classification_model(h):
     if config['model_type'] == 'linearSVM':
         return LinearSVC(C=h)
     elif config['model_type'] == 'ELM':
-        rl = RandomLayer(n_hidden=h)
+        rl = RandomLayer(n_hidden=h,activation_func='reclinear',alpha=1)
         return GenELMClassifier(hidden_layer = rl)
     elif config['model_type'] == 'MLP':
         return MLPClassifier(hidden_layer_sizes=(20,), max_iter=600, verbose=10, early_stopping=False)
@@ -382,6 +384,7 @@ if __name__ == '__main__':
             ps = PredefinedSplit(test_fold=val_mask)
             svc = SVC()
             hps = GridSearchCV(svc, svm_params, cv=ps, n_jobs=3, pre_dispatch=3*8, verbose=config['SVM_verbose']).fit(x_dev, y_dev)
+            print('Best hyperparameter: ' + str(hps.best_params_))
             # define final model
             model = SVC()
             model.set_params(**hps.best_params_)

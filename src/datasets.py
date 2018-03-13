@@ -8,7 +8,7 @@ def path2gt(file_path, dataset):
     elif dataset == 'Ballroom':
         return ballroom_path2gt(file_path)
 
-    elif dataset == 'Extended Ballroom':
+    elif dataset == 'ExtendedBallroom':
         return extended_ballroom_path2gt(file_path)
 
     elif dataset == 'UrbanSound8K':
