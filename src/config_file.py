@@ -50,9 +50,9 @@ config_main = {
         'batch_size': 5,
 
         ## SPECTROGRAM PARAMETERS ##
-        'signal': 'spectrogram',
-        'n_mels': 96,
-        'n_frames': 1376, # GTZAN: 1404, OLD: 1360, BALLROOM: 1376, US8K: 101/188
+        #'signal': 'spectrogram',
+        #'n_mels': 96,
+        #'n_frames': 1376, # GTZAN: 1404, OLD: 1360, BALLROOM: 1376, US8K: 101/188
 
         #'architecture': 'cnn_small_filters',
         #'num_filters': 32, # 717 or 32
@@ -70,21 +70,21 @@ config_main = {
         #'filter_shape': [7,86], # [t,f]: [7,96]
         #'pool_shape': [1,11], # [t,f]: [1,1]
         
-        'architecture': 'cnn_music',
-        'num_filters': 128, # 256, 128, 64, 32, 16, 8 or 4
-        'selected_features_list': [0,1], # timbral [0], temporal [1] or both [0, 1]
+        #'architecture': 'cnn_music',
+        #'num_filters': 128, # 256, 128, 64, 32, 16, 8 or 4
+        #'selected_features_list': [0,1], # timbral [0], temporal [1] or both [0, 1]
 
         #'architecture': 'cnn_audio',
         #'num_filters': 256, # 4, 8, 128 or 256
         #'selected_features_list': [1], # timbral [0], temporal [1] or both [0, 1]
 
         ## WAVEFORM PARAMETERS ##
-        #'signal': 'waveform',
-        #'n_samples': 350000, # min: 5000 - US8K: 4*12000, other: 4*12000*7.3, GTZAN: 350000
+        'signal': 'waveform',
+        'n_samples': 350000, # min: 5000 - US8K: 4*12000, other: 4*12000*7.3, GTZAN: 350000
 
-        #'architecture': 'sample_level',
-        #'num_filters': 23, # 23 or 512
-        #'selected_features_list': [0, 1, 2, 3, 4, 5, 6], # [0, 1, 2, 3, 4, 5, 6]
+        'architecture': 'sample_level',
+        'num_filters': 512, # 23 or 512
+        'selected_features_list': [0, 1, 2, 3, 4, 5, 6], # [0, 1, 2, 3, 4, 5, 6]
 
         #'architecture': 'frame_level',
         #'num_filters': 40, # 40 or 896

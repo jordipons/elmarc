@@ -329,7 +329,7 @@ def sample_level(config, x_in):
                              filters=config['CNN']['num_filters'],
                              kernel_size=3,
                              strides=1,
-                             padding="valid",
+                             padding="same",
                              activation=tf.nn.relu,
                              kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
     pool_1 = tf.layers.max_pooling1d(conv1, pool_size=3, strides=3)
@@ -338,7 +338,7 @@ def sample_level(config, x_in):
                              filters=config['CNN']['num_filters'],
                              kernel_size=3,
                              strides=1, 
-                             padding="valid",
+                             padding="same",
                              activation=tf.nn.relu,
                              kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
     pool_2 = tf.layers.max_pooling1d(conv2, pool_size=3, strides=3)
@@ -347,7 +347,7 @@ def sample_level(config, x_in):
                              filters=config['CNN']['num_filters'], # CHANGE NUMBER OF FILTERS?
                              kernel_size=3,
                              strides=1,
-                             padding="valid",
+                             padding="same",
                              activation=tf.nn.relu,
                              kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
     pool_3 = tf.layers.max_pooling1d(conv3, pool_size=3, strides=3)
@@ -356,7 +356,7 @@ def sample_level(config, x_in):
                              filters=config['CNN']['num_filters'], # CHANGE NUMBER OF FILTERS?
                              kernel_size=3,
                              strides=1,
-                             padding="valid",
+                             padding="same",
                              activation=tf.nn.relu,
                              kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
     pool_4 = tf.layers.max_pooling1d(conv4, pool_size=3, strides=3)
@@ -365,7 +365,7 @@ def sample_level(config, x_in):
                              filters=config['CNN']['num_filters'], # CHANGE NUMBER OF FILTERS?
                              kernel_size=3,
                              strides=1,
-                             padding="valid",
+                             padding="same",
                              activation=tf.nn.relu,
                              kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
     pool_5 = tf.layers.max_pooling1d(conv5, pool_size=3, strides=3)
@@ -374,7 +374,7 @@ def sample_level(config, x_in):
                              filters=config['CNN']['num_filters'], # CHANGE NUMBER OF FILTERS?
                              kernel_size=3,
                              strides=1,
-                             padding="valid",
+                             padding="same",
                              activation=tf.nn.relu,
                              kernel_initializer=tf.contrib.layers.variance_scaling_initializer())
     pool_6 = tf.layers.max_pooling1d(conv6, pool_size=3, strides=3)

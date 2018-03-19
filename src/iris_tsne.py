@@ -12,26 +12,25 @@ def select_cnn_feature_layers(feature_maps, selected_features_list):
         for j in selected_features_list:
             tmp = np.concatenate((tmp, np.squeeze(feature_maps[i][j])))
         selected_features.append(tmp)
-        # comprovar que no siguin les mateixes!
     return selected_features
 
 
-with open('/home/jpons/Desktop/istrainFalse_noDrop_batch1_1514562403.pkl', 'rb') as f:
-    x_false, y_false, config = pickle.load(f)
-X_false = select_cnn_feature_layers(x_false, [0,1,2,3,4])
+with open('/homedtic/jpons/elmarc/data/GTZAN/features/try.pkl', 'rb') as f:
+    [x_train, y_train, id_train, x_val, y_val, id_val, x_test1, y_test1, id_test, config] = pickle.load(f)
+X_test1 = select_cnn_feature_layers(x_test1, [0,1])
 
-with open('/home/jpons/Desktop/istrainTrue_noDrop_batch100_1514559642.pkl', 'rb') as f:
-    x_true, y_true = pickle.load(f)
-X_true = select_cnn_feature_layers(x_true, [0,1,2,3,4])
+with open('/homedtic/jpons/elmarc/data/GTZAN/features/try.pkl', 'rb') as f:
+    [x_train, y_train, id_train, x_val, y_val, id_val, x_test2, y_test2, id_test, config] = pickle.load(f)
+X_test2 = select_cnn_feature_layers(x_test2, [0,1])
 
-X_true_tsne = TSNE(n_components=2, verbose=1, perplexity=200, n_iter=1000, learning_rate=100).fit_transform(X_true)
-X_false_tsne = TSNE(n_components=2, verbose=1, perplexity=200, n_iter=1000, learning_rate=100).fit_transform(X_false)
+X1_tsne = TSNE(n_components=2, verbose=1, perplexity=200, n_iter=1000, learning_rate=100).fit_transform(X_test1)
+X2_tsne = TSNE(n_components=2, verbose=1, perplexity=200, n_iter=1000, learning_rate=100).fit_transform(X_test2)
 
 plt.figure(figsize=(10, 5))
 plt.subplot(121)
-plt.scatter(X_true_tsne[:, 0], X_true_tsne[:, 1], c=y_true, cmap=plt.cm.tab10)
+plt.scatter(X1_tsne[:, 0], X1_tsne[:, 1], c=y_test1)#, cmap=plt.cm.tab10)
 plt.subplot(122)
-plt.scatter(X_false_tsne[:, 0], X_false_tsne[:, 1], c=y_false, cmap=plt.cm.tab10)
+plt.scatter(X2_tsne[:, 0], X2_tsne[:, 1], c=y_test2)#, cmap=plt.cm.tab10)
 plt.title('False: no norm, b1')
 plt.show()
 
