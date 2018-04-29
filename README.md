@@ -65,10 +65,9 @@ config_main = {
     }
 }
 ```
-This experiment runs the `sample_level` CNN architecture with 512 filters in every layer, and we use every feature map in every layer to compute the feature vector – see the implementation of the `sample_level` model at `src/dl_models.py`.
-
 The input waveforms of the GTZAN dataset are formatted to be of approx. 29sec (350,000 samples at 12kHz), features are computed in batches of 5, and we use an SVM as classifier.
 
+This experiment runs the `sample_level` CNN architecture with 512 filters in every layer, and we use every feature map in every layer to compute the feature vector – see the implementation of the `sample_level` model at `src/dl_models.py`.
 
 ## References
 [1] Saxe, et al. On Random Weights and Unsupervised Feature Learning. In: ICML. 2011. p. 1089-1096.
