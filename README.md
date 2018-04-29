@@ -11,7 +11,7 @@ extract a feature vector from the embeddings of a randomly weighted CNN; and the
 to a classifier – which can be an SVM or an ELM. Our goal is to compare the obtained classification accuracies
 when using different CNN architectures. We consider three datasets for our study; the first one, is the fault-filtered GTZAN dataset for music genre classification (classification accuracy is the figure-of-merit expressed in the vertical axis of the following figures):
 <p align="center"><img src="img/GTZAN3500.png" height="290"></p>
-The second dataset we consider is the Extended Ballroom (with rhythm/tempo musical classes):
+The second dataset is the Extended Ballroom (with rhythm/tempo musical classes):
 <p align="center"><img src="img/Ball3500.png" height="290"></p>
 In previous graphic one can observe that (musical) priors embedded in the structure of the model can facilitate capturing useful (temporal) cues for classifying rhythm/tempo classes – see the accuracy performance of the Temporal architecture (89.82%), which is very close to the state-of-the-art (94.9%).
 
