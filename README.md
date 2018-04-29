@@ -23,7 +23,7 @@ And the last dataset is the Urban Sounds 8k, composed of natural (non-music) sou
 - *Spectrogram front-ends*: 7x96 < 7x86 – as shown in prior (trained) works. 
 
 ## Dependencies
-You need to install the following dependencies: tensorflow, librosa, pandas, numpy, scipy, sklearn, pickle. It is not a bad idea to run these models on CPUs - therefore, we recommend to install the CPU tensorflow version.
+You need to install the following dependencies: tensorflow, librosa, pandas, numpy, scipy, sklearn, pickle. It is not a bad idea to run these models on CPUs – therefore, we recommend to install the CPU tensorflow version.
 
 The public extreme learning machine implementation we use (already included in this repo) can be found here: https://github.com/zygmuntz/Python-ELM
 
@@ -31,7 +31,7 @@ The public extreme learning machine implementation we use (already included in t
 
 Set `src/config_file.py` and run: `python main.py`
 
-Some documentation is available below `config_file.py` - but here an example of how to run set the configuration file:
+Some documentation is available in `config_file.py`, but here an example of how to set the configuration file:
 
 ```python
 config_main = {
@@ -65,7 +65,7 @@ config_main = {
     }
 }
 ```
-This experiment runs the `sample_level` CNN architecture with 512 filters in every layer, and we use every feature map in every layer to compute the feature vector - see the implementation of the `sample_level` model at `src/dl_models.py`.
+This experiment runs the `sample_level` CNN architecture with 512 filters in every layer, and we use every feature map in every layer to compute the feature vector – see the implementation of the `sample_level` model at `src/dl_models.py`.
 
 The input waveforms of the GTZAN dataset are formatted to be of approx. 29sec (350,000 samples at 12kHz), features are computed in batches of 5, and we use an SVM as classifier.
 
