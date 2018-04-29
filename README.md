@@ -22,4 +22,45 @@ And the last dataset is the Urban Sounds 8k, composed of natural (non-music) sou
 
 - **Spectrogram front-ends**: 7x96<7x86 – as shown in prior (trained) works [30, 35]. 
 
+## Installation
+
+
 ## Usage
+
+Set src/config_file.py and run: python main.py
+
+Some documentation is available below config_file.py - but here an example of how to run set the configuration file:
+
+```python
+config_main = {
+
+    'experiment_name': 'v0_or_any_name',
+    'features_type': 'CNN',
+    'model_type': 'SVM',
+    'SVM_verbose': 1,
+    'load_extracted_features': False,
+    'sampling_rate': 12000,
+
+    'dataset': 'GTZAN',
+    'audio_path': '/datasets/MTG/users/jpons/GTZAN/',
+    'save_extracted_features_folder': '../data/GTZAN/features/',
+    'results_folder': '../data/GTZAN/results/',
+    'train_set_list': '/datasets/MTG/users/jpons/GTZAN_partitions/train_filtered.txt',
+    'val_set_list': '/datasets/MTG/users/jpons/GTZAN_partitions/valid_filtered.txt',
+    'test_set_list': '/datasets/MTG/users/jpons/GTZAN_partitions/test_filtered.txt',
+    'audios_list': False,
+    'fix_length_by': 'crop', # 'zero-pad', 'repeat-pad' or 'crop'
+
+    'CNN': {
+        'batch_size': 5,
+
+        'signal': 'waveform',
+        'n_samples': 350000,
+
+        'architecture': 'sample_level',
+        'num_filters': 512,
+        'selected_features_list': [0, 1, 2, 3, 4, 5, 6],
+        
+    }
+}
+```
