@@ -22,8 +22,8 @@ And the last dataset is the Urban Sounds 8k, composed of natural (non-music) sou
 
 - **Spectrogram front-ends**: 7x96<7x86 – as shown in prior (trained) works [30, 35]. 
 
-## Installation
-
+## Dependencies
+You need to install the following dependencies: tensorflow, librosa, pandas, numpy, scipy, sklearn, pickle.
 
 ## Usage
 
