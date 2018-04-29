@@ -12,6 +12,8 @@ The second dataset is the Extended Ballroom (with rhythm/tempo music classes):
 <p align="center"><img src="img/Ball3500.png" height="290"></p>
 One can observe that (musical) priors embedded in the structure of the model can facilitate capturing useful (temporal) cues for classifying rhythm/tempo classes – see the accuracy performance of the Temporal architecture (89.82%), which is very close to the state-of-the-art (94.9%).
 
+<br>
+
 And the last dataset is the Urban Sounds 8k, composed of natural (non-music) sounds:
 <p align="center"><img src="img/us8k3500.png" height="290"></p>
 The results we obtain are far from random, since: (i) randomly weighted CNNs are (in some cases) close to match the accuracies obtained by trained CNNs; and (ii) these are able to outperform MFCCs. 
