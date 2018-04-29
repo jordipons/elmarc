@@ -1,8 +1,7 @@
 # elmarc
 Repository containg experiments with Extreme Learning Machines And Reservoir Computing, ELMARC.
 
-<p align="center"><img src="img/GTZAN3500.png" height="290"></p>
-<p align="center"><img src="img/Ball3500.png" height="290"></p>
+<p align="center"><img src="img/GTZAN3500.png" height="290"> <img src="img/Ball3500.png" height="290"></p>
 <p align="center"><img src="img/us8k3500.png" height="290"></p>
 
 
