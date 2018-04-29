@@ -69,9 +69,9 @@ The input waveforms of the GTZAN dataset are formatted to be of approx. 29sec (3
 
 This experiment runs the `sample_level` CNN architecture with 512 filters in every layer, and we use every feature map in every layer to compute the feature vector – see the implementation of the `sample_level` model at `src/dl_models.py`.
 
-## Reproduce our results
+## Reproducing our results
 
-For reproducing our results, you only need to get the data and use the same partitions as us.
+To reproduce our results, you just need to download the data and use the same partitions:
 
 - GTZAN fault-filtered version: download the data following the instructions in this [link](http://marsyasweb.appspot.com/download/data_sets/).
 
