@@ -38,9 +38,6 @@ if config['model_type'] == 'linearSVM':
     hyperparameters = [0.1, 1.0, 2.0]
 elif config['model_type'] == 'ELM':
     hyperparameters = [100, 250, 500, 1200, 1800, 2500] # remove 100 and 250
-    #hyperparameters = [50, 100, 250, 500, 750]
-    #hyperparameters = ['tanh', 'sine', 'tribas', 'inv_tribas', 'sigmoid', 'hardlim', 'softlim', 'gaussian', 'multiquadric', 'inv_multiquadric', 'reclinear']
-    #hyperparameters = [alpha=0]
 elif config['model_type'] == 'KNN':
     hyperparameters = [1,3,5,10,20,30,50,100]
 
@@ -463,5 +460,5 @@ if __name__ == '__main__':
 
 # NOTES ON SPECTROGRAM. Mel power spectrogram. Sampling rate: 12k. fmin=0 and fmax=6000. Using shorter clips.
 
-# IDEAS. Check statistics of input data (zero-mean/one-var)?
-#      . Only store mean values for features?
+# IDEAS: - Check statistics of input data (zero-mean/one-var)?
+#        - Only store mean values for features?
