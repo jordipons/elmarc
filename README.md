@@ -14,13 +14,13 @@ And the last dataset is the Urban Sounds 8k, composed of natural (non-music) sou
 <p align="center"><img src="img/us8k3500.png" height="290"></p>
 
 ## Observations
-- **Extended Ballroom**: (musical) priors embedded in the structure of the model can facilitate capturing useful (temporal) cues for classifying rhythm/tempo classes – see the accuracy performance of the Temporal architecture (89.82%), which is very close to the state-of-the-art (94.9%).
+- *Extended Ballroom*: (musical) priors embedded in the structure of the model can facilitate capturing useful (temporal) cues for classifying rhythm/tempo classes – see the accuracy performance of the Temporal architecture (89.82%), which is very close to the state-of-the-art (94.9%).
 
-- **All datasets**: the results we obtain are far from random, since: *(i)* randomly weighted CNNs are (in some cases) close to match the accuracies obtained by trained CNNs; and *(ii)* these are able to outperform MFCCs. 
+- *All datasets*: the results we obtain are far from random, since: *(i)* randomly weighted CNNs are (in some cases) close to match the accuracies obtained by trained CNNs; and *(ii)* these are able to outperform MFCCs. 
 
-- **Waveform front-ends**: sample-level >> frame-level many-shapes > frame-level – as noted in the (trained) literature [26, 51, 52]. 
+- *Waveform front-ends*: sample-level >> frame-level many-shapes > frame-level – as noted in the (trained) literature [26, 51, 52]. 
 
-- **Spectrogram front-ends**: 7x96<7x86 – as shown in prior (trained) works [30, 35]. 
+- *Spectrogram front-ends*: 7x96<7x86 – as shown in prior (trained) works [30, 35]. 
 
 ## Dependencies
 You need to install the following dependencies: tensorflow, librosa, pandas, numpy, scipy, sklearn, pickle.
