@@ -25,11 +25,13 @@ And the last dataset is the Urban Sounds 8k, composed of natural (non-music) sou
 ## Dependencies
 You need to install the following dependencies: tensorflow, librosa, pandas, numpy, scipy, sklearn, pickle.
 
+The public extreme learning machine implementation I use can be found here: https://github.com/zygmuntz/Python-ELM
+
 ## Usage
 
-Set src/config_file.py and run: python main.py
+Set `src/config_file.py` and run: `python main.py`
 
-Some documentation is available below config_file.py - but here an example of how to run set the configuration file:
+Some documentation is available below `config_file.py` - but here an example of how to run set the configuration file:
 
 ```python
 config_main = {
