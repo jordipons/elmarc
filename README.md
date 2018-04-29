@@ -25,7 +25,7 @@ And the last dataset is the Urban Sounds 8k, composed of natural (non-music) sou
 ## Dependencies
 You need to install the following dependencies: tensorflow, librosa, pandas, numpy, scipy, sklearn, pickle. It is not a bad idea to run these models on CPUs – therefore, we recommend to install the CPU version of tensorflow.
 
-The public extreme learning machine implementation we use (already included in this repo) can be found here: https://github.com/zygmuntz/Python-ELM
+The public extreme learning machine implementation we use (already included in this repo) can be found [here](https://github.com/zygmuntz/Python-ELM).
 
 ## Usage
 
