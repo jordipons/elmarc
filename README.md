@@ -25,7 +25,7 @@ And the last dataset is the Urban Sounds 8k, composed of natural (non-music) sou
 ## Dependencies
 You need to install the following dependencies: tensorflow, librosa, pandas, numpy, scipy, sklearn, pickle. It is not a bad idea to run these models on CPUs – therefore, we recommend to install the CPU version of tensorflow.
 
-The public extreme learning machine implementation we use (already included in this repo) can be found here: https://github.com/zygmuntz/Python-ELM
+The public extreme learning machine implementation we use (already included in this repo) can be found [here](https://github.com/zygmuntz/Python-ELM).
 
 ## Usage
 
@@ -44,12 +44,12 @@ config_main = {
     'sampling_rate': 12000,
 
     'dataset': 'GTZAN',
-    'audio_path': '/datasets/MTG/users/jpons/GTZAN/',
+    'audio_path': '/path_to_audio/jpons/GTZAN/',
     'save_extracted_features_folder': '../data/GTZAN/features/',
     'results_folder': '../data/GTZAN/results/',
-    'train_set_list': '/datasets/MTG/users/jpons/GTZAN_partitions/train_filtered.txt',
-    'val_set_list': '/datasets/MTG/users/jpons/GTZAN_partitions/valid_filtered.txt',
-    'test_set_list': '/datasets/MTG/users/jpons/GTZAN_partitions/test_filtered.txt',
+    'train_set_list': '/path_to_train_partition/jpons/GTZAN_partitions/train_filtered.txt',
+    'val_set_list': '/path_to_val_partition/jpons/GTZAN_partitions/valid_filtered.txt',
+    'test_set_list': '/path_to_test_partition/jpons/GTZAN_partitions/test_filtered.txt',
     'audios_list': False,
     
     'CNN': {
@@ -68,6 +68,18 @@ config_main = {
 The input waveforms of the GTZAN dataset are formatted to be of approx. 29sec (350,000 samples at 12kHz), features are computed in batches of 5, and we use an SVM as classifier.
 
 This experiment runs the `sample_level` CNN architecture with 512 filters in every layer, and we use every feature map in every layer to compute the feature vector – see the implementation of the `sample_level` model at `src/dl_models.py`.
+
+## Reproducing our results
+
+To reproduce our results, you just need to download the data and use the same partitions:
+
+- GTZAN fault-filtered version: download the data following the instructions in this [link](http://marsyasweb.appspot.com/download/data_sets/).
+
+- Extended Ballroom: download the data following the instructions in this [link](http://anasynth.ircam.fr/home/media/ExtendedBallroom).
+
+- Urban Sound 8k: download the data following the instructions in this [link](https://serv.cusp.nyu.edu/projects/urbansounddataset/urbansound8k.html), use all their audios with the partitions the authors propose.
+
+Feel free to contact us in case you have any problem in reproducing our results.
 
 ## References
 [1] Saxe, et al. On Random Weights and Unsupervised Feature Learning. In: ICML. 2011. p. 1089-1096.
