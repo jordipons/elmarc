@@ -1,108 +1,35 @@
 config_main = {
 
+    # Experimental setup
     'experiment_name': 'v0',
-    'features_type': 'CNN', # CNN or MFCC
-    'model_type': 'SVM', # linearSVM, ELM, SVM, MLP, KNN or linear
+    'features_type': 'CNN',
+    'model_type': 'SVM',
+    'SVM_verbose': 1,
     'load_extracted_features': False,
     'sampling_rate': 12000,
 
-    #'dataset': 'ExtendedBallroom',
-    #'audio_path': '/datasets/MTG/users/jpons/extended_ballroom/',
-    #'save_extracted_features_folder': '../data/Extended_Ballroom/features/',
-    #'results_folder': '../data/Extended_Ballroom/results/',
-    #'train_set_list': None,
-    #'val_set_list': None,
-    #'test_set_list': None,
-    #'audios_list': '/datasets/MTG/users/jpons/extended_ballroom/all_files.txt',
-    #'fix_length_by': 'crop', # 'zero-pad', 'repeat-pad' or 'crop'
-
-    #'dataset': 'Ballroom',
-    #'audio_path': '/datasets/MTG/users/jpons/ballroom/BallroomData/',
-    #'save_extracted_features_folder': '../data/Ballroom/features/',
-    #'results_folder': '../data/Ballroom/results/',
-    #'train_set_list': None,
-    #'val_set_list': None,
-    #'test_set_list': None,
-    #'audios_list': '/datasets/MTG/users/jpons/ballroom/allBallroomFiles.txt',
-    #'fix_length_by': 'crop', # 'zero-pad', 'repeat-pad' or 'crop'
-
+    # Dataset configuration
     'dataset': 'GTZAN',
     'audio_path': '/homedtic/jpons/GTZAN/',
-    'save_extracted_features_folder': '../data/GTZAN/features/',
-    'results_folder': '../data/GTZAN/results/',
-    'train_set_list': '/homedtic/jpons/GTZAN_partitions/train_filtered.txt',
-    'val_set_list': '/homedtic/jpons/GTZAN_partitions/valid_filtered.txt',
-    'test_set_list': '/homedtic/jpons/GTZAN_partitions/test_filtered.txt',
+    'save_extracted_features_folder': '../data/GTZAN_debug/features/',
+    'results_folder': '../data/GTZAN_debug/results/',
+    'train_set_list': '/homedtic/jpons/GTZAN_debug_partitions/train_filtered.txt',
+    'val_set_list': '/homedtic/jpons/GTZAN_debug_partitions/valid_filtered.txt',
+    'test_set_list': '/homedtic/jpons/GTZAN_debug_partitions/test_filtered.txt',
     'audios_list': False,
-    'fix_length_by': 'crop', # 'zero-pad', 'repeat-pad' or 'crop'
 
-    #'dataset': 'UrbanSound8K',
-    #'audio_path': '/datasets/MTG/users/jpons/urban_sounds/UrbanSound8K/',
-    #'save_extracted_features_folder': '../data/UrbanSound8K/features/',
-    #'results_folder': '../data/UrbanSound8K/results/',
-    #'train_set_list': None,
-    #'val_set_list': None,
-    #'test_set_list': None,
-    #'audios_list': '/datasets/MTG/users/jpons/urban_sounds/UrbanSound8K/allFiles.txt',
-    #'fix_length_by': 'repeat-pad', # 'zero-pad', 'repeat-pad', 'crop' or False
-
+    # Waveform model: sample level CNN
     'CNN': {
-        'batch_size': 5,
+        'signal': 'spectrogram',
+        'n_mels': 96,
+        'n_frames': 1376,
 
-        ## SPECTROGRAM PARAMETERS ##
-        #'signal': 'spectrogram',
-        #'n_mels': 96,
-        #'n_frames': 1376, # GTZAN: 1404, OLD: 1360, BALLROOM: 1376, US8K: 101/188
-
-        #'architecture': 'cnn_small_filters',
-        #'num_filters': 32, # 717 or 32
-        #'selected_features_list': [0, 1, 2, 3, 4],
-
-        #'architecture': 'cnn_single',
-        #'num_filters': 3585, # 160 or 3585
-        #'selected_features_list': [1], # conv-layer [0], pooling-layer [1] or both [0, 1]
-        #'filter_shape': [7,96], # [t,f]: [7,96]
-        #'pool_shape': [1,1], # [t,f]: [1,1]
-
-        #'architecture': 'cnn_single',
-        #'num_filters': 160, # 160 or 3585
-        #'selected_features_list': [1], # conv-layer [0], pooling-layer [1] or both [0, 1]
-        #'filter_shape': [7,86], # [t,f]: [7,96]
-        #'pool_shape': [1,11], # [t,f]: [1,1]
+        'architecture': 'cnn_small_filters',
+        'num_filters': 32,
+        'selected_features_list': [0, 1, 2, 3, 4],
         
-        #'architecture': 'cnn_music',
-        #'num_filters': 128, # 256, 128, 64, 32, 16, 8 or 4
-        #'selected_features_list': [0,1], # timbral [0], temporal [1] or both [0, 1]
-
-        #'architecture': 'cnn_audio',
-        #'num_filters': 256, # 4, 8, 128 or 256
-        #'selected_features_list': [1], # timbral [0], temporal [1] or both [0, 1]
-
-        ## WAVEFORM PARAMETERS ##
-        'signal': 'waveform',
-        'n_samples': 350000, # min: 5000 - US8K: 4*12000, other: 4*12000*7.3, GTZAN: 350000
-
-        'architecture': 'sample_level',
-        'num_filters': 512, # 23 or 512
-        'selected_features_list': [0, 1, 2, 3, 4, 5, 6], # [0, 1, 2, 3, 4, 5, 6]
-
-        #'architecture': 'frame_level',
-        #'num_filters': 40, # 40 or 896
-        #'selected_features_list': [0, 1, 2, 3], # [0, 1, 2, 3]
-
-        #'architecture': 'frame_level_many',
-        #'num_filters': 20, # 20 or 448
-        #'selected_features_list': [0, 1, 2, 3, 4, 5, 6, 7], # [0, 1, 2, 3, 4, 5, 6, 7]
-        
-    },
-
-    #'MFCC': {
-    #    'number': 20,
-    #    'fixed_length': 2048
-    #},
-
-    'SVM_verbose': 1,
-
+        'batch_size': 5
+    }
 }
 
 """
@@ -224,5 +151,114 @@ DOCUMENTATION
 'CNN'/'architecture': length in frames of the input spectrogram
  -- VALUES: 'cnn_small_filters' or 'cnn_music'
  -- EXAMPLE: see 'features_type' example
+
+Below, some complementary (commented) examples of how to set the configuration file:
+
+config_main = {
+
+    'experiment_name': 'v0',
+    'features_type': 'CNN', # CNN or MFCC
+    'model_type': 'SVM', # linearSVM, ELM, SVM, MLP, KNN or linear
+    'load_extracted_features': False,
+    'sampling_rate': 12000,
+
+    #'dataset': 'ExtendedBallroom',
+    #'audio_path': '/datasets/MTG/users/jpons/extended_ballroom/',
+    #'save_extracted_features_folder': '../data/Extended_Ballroom/features/',
+    #'results_folder': '../data/Extended_Ballroom/results/',
+    #'train_set_list': None,
+    #'val_set_list': None,
+    #'test_set_list': None,
+    #'audios_list': '/datasets/MTG/users/jpons/extended_ballroom/all_files.txt',
+    #'fix_length_by': 'crop', # 'zero-pad', 'repeat-pad' or 'crop'
+
+    #'dataset': 'Ballroom',
+    #'audio_path': '/datasets/MTG/users/jpons/ballroom/BallroomData/',
+    #'save_extracted_features_folder': '../data/Ballroom/features/',
+    #'results_folder': '../data/Ballroom/results/',
+    #'train_set_list': None,
+    #'val_set_list': None,
+    #'test_set_list': None,
+    #'audios_list': '/datasets/MTG/users/jpons/ballroom/allBallroomFiles.txt',
+    #'fix_length_by': 'crop', # 'zero-pad', 'repeat-pad' or 'crop'
+
+    'dataset': 'GTZAN',
+    'audio_path': '/homedtic/jpons/GTZAN/',
+    'save_extracted_features_folder': '../data/GTZAN/features/',
+    'results_folder': '../data/GTZAN/results/',
+    'train_set_list': '/homedtic/jpons/GTZAN_partitions/train_filtered.txt',
+    'val_set_list': '/homedtic/jpons/GTZAN_partitions/valid_filtered.txt',
+    'test_set_list': '/homedtic/jpons/GTZAN_partitions/test_filtered.txt',
+    'audios_list': False,
+    'fix_length_by': 'crop', # 'zero-pad', 'repeat-pad' or 'crop'
+
+    #'dataset': 'UrbanSound8K',
+    #'audio_path': '/datasets/MTG/users/jpons/urban_sounds/UrbanSound8K/',
+    #'save_extracted_features_folder': '../data/UrbanSound8K/features/',
+    #'results_folder': '../data/UrbanSound8K/results/',
+    #'train_set_list': None,
+    #'val_set_list': None,
+    #'test_set_list': None,
+    #'audios_list': '/datasets/MTG/users/jpons/urban_sounds/UrbanSound8K/allFiles.txt',
+    #'fix_length_by': 'repeat-pad', # 'zero-pad', 'repeat-pad', 'crop' or False
+
+    'CNN': {
+        'batch_size': 5,
+
+        ## SPECTROGRAM PARAMETERS ##
+        #'signal': 'spectrogram',
+        #'n_mels': 96,
+        #'n_frames': 1376, # GTZAN: 1404, OLD: 1360, BALLROOM: 1376, US8K: 101/188
+
+        #'architecture': 'cnn_small_filters',
+        #'num_filters': 32, # 717 or 32
+        #'selected_features_list': [0, 1, 2, 3, 4],
+
+        #'architecture': 'cnn_single',
+        #'num_filters': 3585, # 160 or 3585
+        #'selected_features_list': [1], # conv-layer [0], pooling-layer [1] or both [0, 1]
+        #'filter_shape': [7,96], # [t,f]: [7,96]
+        #'pool_shape': [1,1], # [t,f]: [1,1]
+
+        #'architecture': 'cnn_single',
+        #'num_filters': 160, # 160 or 3585
+        #'selected_features_list': [1], # conv-layer [0], pooling-layer [1] or both [0, 1]
+        #'filter_shape': [7,86], # [t,f]: [7,96]
+        #'pool_shape': [1,11], # [t,f]: [1,1]
+        
+        #'architecture': 'cnn_music',
+        #'num_filters': 128, # 256, 128, 64, 32, 16, 8 or 4
+        #'selected_features_list': [0,1], # timbral [0], temporal [1] or both [0, 1]
+
+        #'architecture': 'cnn_audio',
+        #'num_filters': 256, # 4, 8, 128 or 256
+        #'selected_features_list': [1], # timbral [0], temporal [1] or both [0, 1]
+
+        ## WAVEFORM PARAMETERS ##
+        'signal': 'waveform',
+        'n_samples': 350000, # min: 5000 - US8K: 4*12000, other: 4*12000*7.3, GTZAN: 350000
+
+        'architecture': 'sample_level',
+        'num_filters': 512, # 23 or 512
+        'selected_features_list': [0, 1, 2, 3, 4, 5, 6], # [0, 1, 2, 3, 4, 5, 6]
+
+        #'architecture': 'frame_level',
+        #'num_filters': 40, # 40 or 896
+        #'selected_features_list': [0, 1, 2, 3], # [0, 1, 2, 3]
+
+        #'architecture': 'frame_level_many',
+        #'num_filters': 20, # 20 or 448
+        #'selected_features_list': [0, 1, 2, 3, 4, 5, 6, 7], # [0, 1, 2, 3, 4, 5, 6, 7]
+        
+    },
+
+    #'MFCC': {
+    #    'number': 20,
+    #    'fixed_length': 2048
+    #},
+
+    'SVM_verbose': 1,
+
+}
 
 """

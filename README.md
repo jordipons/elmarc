@@ -36,6 +36,7 @@ Some documentation is available in `config_file.py`, but here an example of how 
 ```python
 config_main = {
 
+    # Experimental setup
     'experiment_name': 'v0_or_any_name',
     'features_type': 'CNN',
     'model_type': 'SVM',
@@ -43,29 +44,30 @@ config_main = {
     'load_extracted_features': False,
     'sampling_rate': 12000,
 
+    # Dataset configuration
     'dataset': 'GTZAN',
     'audio_path': '/path_to_audio/jpons/GTZAN/',
     'save_extracted_features_folder': '../data/GTZAN/features/',
     'results_folder': '../data/GTZAN/results/',
-    'train_set_list': '/path_to_train_partition/jpons/GTZAN_partitions/train_filtered.txt',
-    'val_set_list': '/path_to_val_partition/jpons/GTZAN_partitions/valid_filtered.txt',
-    'test_set_list': '/path_to_test_partition/jpons/GTZAN_partitions/test_filtered.txt',
+    'train_set_list': '/path_to_train_set/jpons/GTZAN_partitions/train_filtered.txt',
+    'val_set_list': '/path_to_val_set/jpons/GTZAN_partitions/valid_filtered.txt',
+    'test_set_list': '/path_to_test_set/jpons/GTZAN_partitions/test_filtered.txt',
     'audios_list': False,
-    
-    'CNN': {
-        'batch_size': 5,
 
+    # Waveform model: sample level CNN
+    'CNN': {
         'signal': 'waveform',
         'n_samples': 350000,
 
         'architecture': 'sample_level',
         'num_filters': 512,
         'selected_features_list': [0, 1, 2, 3, 4, 5, 6],
-        
+
+        'batch_size': 5
     }
 }
 ```
-The input waveforms of the GTZAN dataset are formatted to be of approx. 29sec (350,000 samples at 12kHz), features are computed in batches of 5, and we use an SVM as classifier.
+In this config file, the input waveforms of the GTZAN dataset are formatted to be of approx. 29sec (350,000 samples at 12kHz), features are computed in batches of 5, and we use an SVM as classifier.
 
 This experiment runs the `sample_level` CNN architecture with 512 filters in every layer, and we use every feature map in every layer to compute the feature vector – see the implementation of the `sample_level` model at `src/dl_models.py`.
 
@@ -73,13 +75,13 @@ This experiment runs the `sample_level` CNN architecture with 512 filters in eve
 
 To reproduce our results, you just need to download the data and use the same partitions:
 
-- GTZAN fault-filtered version: download the data following the instructions in this [link](http://marsyasweb.appspot.com/download/data_sets/).
+- GTZAN fault-filtered version: download the data following the instructions in this [link](http://marsyasweb.appspot.com/download/data_sets/). Download the text files listing the audios in every partition in this [link](https://github.com/jongpillee/music_dataset_split/tree/master/GTZAN_split), and set the config file corresponding variables: 'train_set_list', 'val_set_list', 'test_set_list'.
 
-- Extended Ballroom: download the data following the instructions in this [link](http://anasynth.ircam.fr/home/media/ExtendedBallroom).
+- Extended Ballroom: download the data following the instructions in this [link](http://anasynth.ircam.fr/home/media/ExtendedBallroom). 10 stratified folds are randomly generated (via a sklearn function) for cross-validation. List all the audios in a file, and set the config file corresponding variables: 'train_set_list': None, 'val_set_list': None, 'test_set_list': None, 'audios_list': 'path_to_list_of_audios.txt'.
 
-- Urban Sound 8k: download the data following the instructions in this [link](https://serv.cusp.nyu.edu/projects/urbansounddataset/urbansound8k.html), use all their audios with the partitions the authors propose.
+- Urban Sound 8k: download the data following the instructions in this [link](https://serv.cusp.nyu.edu/projects/urbansounddataset/urbansound8k.html), use all their audios with the partitions the authors propose. Partitions are already available by the authors, and we have some code to grab those! Just set the config file as: 'train_set_list': None, 'val_set_list': None, 'test_set_list': None, 'audios_list': 'path_to_list_of_audios.txt'.
 
-Feel free to contact us in case you have any problem in reproducing our results.
+For more information, see the documentation available in `config_file.py`.
 
 ## References
 [1] Saxe, et al. On Random Weights and Unsupervised Feature Learning. In: ICML. 2011. p. 1089-1096.
