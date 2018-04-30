@@ -27,12 +27,12 @@ config_main = {
     #'fix_length_by': 'crop', # 'zero-pad', 'repeat-pad' or 'crop'
 
     'dataset': 'GTZAN',
-    'audio_path': '/datasets/MTG/users/jpons/GTZAN/',
+    'audio_path': '/homedtic/jpons/GTZAN/',
     'save_extracted_features_folder': '../data/GTZAN/features/',
     'results_folder': '../data/GTZAN/results/',
-    'train_set_list': '/datasets/MTG/users/jpons/GTZAN_partitions/train_filtered.txt',
-    'val_set_list': '/datasets/MTG/users/jpons/GTZAN_partitions/valid_filtered.txt',
-    'test_set_list': '/datasets/MTG/users/jpons/GTZAN_partitions/test_filtered.txt',
+    'train_set_list': '/homedtic/jpons/GTZAN_partitions/train_filtered.txt',
+    'val_set_list': '/homedtic/jpons/GTZAN_partitions/valid_filtered.txt',
+    'test_set_list': '/homedtic/jpons/GTZAN_partitions/test_filtered.txt',
     'audios_list': False,
     'fix_length_by': 'crop', # 'zero-pad', 'repeat-pad' or 'crop'
 
