@@ -23,7 +23,7 @@ And the last dataset is the Urban Sounds 8k, composed of natural (non-music) sou
 - *Spectrogram front-ends*: 7x96 < 7x86 – as shown in prior (trained) works. 
 
 ## Dependencies
-You need to install the following dependencies: tensorflow, librosa, pandas, numpy, scipy, sklearn, pickle. It is not a bad idea to run these models on CPUs – therefore, we recommend to install the CPU version of tensorflow.
+You need to install the following dependencies: tensorflow, librosa, pandas, numpy, scipy, sklearn, pickle. It is not a bad idea to run these models on a CPU – therefore, we recommend to install the CPU version of tensorflow.
 
 The public extreme learning machine implementation we use (already included in this repo) can be found [here](https://github.com/zygmuntz/Python-ELM).
 
@@ -67,7 +67,7 @@ config_main = {
     }
 }
 ```
-In this config file, the input waveforms of the GTZAN dataset are formatted to be of approx. 29sec (350,000 samples at 12kHz), features are computed in batches of 5, and we use an SVM as classifier.
+As a result of this config file, the input waveforms of the GTZAN dataset are formatted to be of approx. 29sec (350,000 samples at 12kHz), features are computed in batches of 5, and we use an SVM as classifier.
 
 This experiment runs the `sample_level` CNN architecture with 512 filters in every layer, and we use every feature map in every layer to compute the feature vector – see the implementation of the `sample_level` model at `src/dl_models.py`.
 
@@ -75,11 +75,11 @@ This experiment runs the `sample_level` CNN architecture with 512 filters in eve
 
 To reproduce our results, you just need to download the data and use the same partitions:
 
-- GTZAN fault-filtered version: download the data following the instructions in this [link](http://marsyasweb.appspot.com/download/data_sets/). Download the text files listing the audios in every partition in this [link](https://github.com/jongpillee/music_dataset_split/tree/master/GTZAN_split), and set the config file corresponding variables: 'train_set_list', 'val_set_list', 'test_set_list'.
+- **GTZAN fault-filtered version**: download the data [(link)](http://marsyasweb.appspot.com/download/data_sets/). Download the (.txt) files listing each which audios are in every partition [(link)](https://github.com/jongpillee/music_dataset_split/tree/master/GTZAN_split). Set the config file accordingly: `'train_set_list': 'path_to_list_of_audios.txt', 'val_set_list': 'path_to_list_of_audios.txt', 'test_set_list': 'path_to_list_of_audios.txt'`.
 
-- Extended Ballroom: download the data following the instructions in this [link](http://anasynth.ircam.fr/home/media/ExtendedBallroom). 10 stratified folds are randomly generated (via a sklearn function) for cross-validation. List all the audios in a file, and set the config file corresponding variables: 'train_set_list': None, 'val_set_list': None, 'test_set_list': None, 'audios_list': 'path_to_list_of_audios.txt'.
+- **Extended Ballroom**: download the data following the instructions in this [link](http://anasynth.ircam.fr/home/media/ExtendedBallroom). 10 stratified folds are randomly generated (via a sklearn function) for cross-validation. List all the audios in a file, and set the config file corresponding variables: 'train_set_list': None, 'val_set_list': None, 'test_set_list': None, 'audios_list': 'path_to_list_of_audios.txt'.
 
-- Urban Sound 8k: download the data following the instructions in this [link](https://serv.cusp.nyu.edu/projects/urbansounddataset/urbansound8k.html), use all their audios with the partitions the authors propose. Partitions are already available by the authors, and we have some code to grab those! Just set the config file as: 'train_set_list': None, 'val_set_list': None, 'test_set_list': None, 'audios_list': 'path_to_list_of_audios.txt'.
+- **Urban Sound 8k**: download the data following the instructions in this [link](https://serv.cusp.nyu.edu/projects/urbansounddataset/urbansound8k.html), use all their audios with the partitions the authors propose. Partitions are already available by the authors, and we have some code to grab those! Just set the config file as: 'train_set_list': None, 'val_set_list': None, 'test_set_list': None, 'audios_list': 'path_to_list_of_audios.txt'.
 
 For more information, see the documentation available in `config_file.py`.
 
