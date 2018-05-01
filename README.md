@@ -1,22 +1,21 @@
 ## Randomly weighted CNNs for (music) audio classification
-The computer vision literature shows that randomly weighted neural networks perform reasonably as feature extractors. Following this idea, we study how non-trained (randomly weighted) convolutional neural networks perform as feature extractors for (music) audio classification tasks. We use features extracted from the embeddings of
-deep architectures as input to a classifier – with the goal to compare classification accuracies when using different randomly weighted architectures. By following this methodology, we run a comprehensive evaluation of the current deep architectures for audio classification.
+The computer vision literature shows that randomly weighted neural networks perform reasonably as feature extractors. Following this idea, we study how non-trained (randomly weighted) convolutional neural networks perform as feature extractors for (music) audio classification tasks. We use features extracted from the embeddings of deep architectures as input to a classifier – with the goal to compare classification accuracies when using different randomly weighted architectures. By following this methodology, we run a fast and comprehensive evaluation of the current deep architectures for audio classification.
 
-This study builds on top of prior works showing that the (classification) performance delivered by random CNN features is correlated with the results of their end-to-end trained counterparts [1]. We use this property to run a comprehensive evaluation of the current deep architectures for (music) audio. Our method works as follows: first, we extract a feature vector from the embeddings of a randomly weighted CNN; and then, we input these features to a classifier – which can be an support vector machine (SVM) or an extreme learning machine (ELM). Our goal is to compare the obtained classification accuracies when using different CNN architectures. 
+This study builds on top of prior works showing that the (classification) performance delivered by random CNN features is correlated with the results of their end-to-end trained counterparts [1]. Put in other words: architectures which perform well with random weights also tend to perform well with trained weights. We use this property to run a fast and comprehensive evaluation of the current deep architectures for (music) audio. Our method works as follows: first, we extract a feature vector from the embeddings of a randomly weighted CNN; and then, we input these features to a classifier – which can be a support vector machine (SVM) or an extreme learning machine (ELM). Our goal is to compare the obtained classification accuracies when using different CNN architectures. 
 
-We consider three datasets for our study. The first one, is the fault-filtered GTZAN dataset for music genre classification – classification accuracy is the figure-of-merit expressed in the vertical axis of the following figures:
+We consider three datasets in our study. The first one, is the fault-filtered GTZAN dataset for music genre classification – classification accuracy is the figure-of-merit expressed in the vertical axis of the following figures:
 
 <p align="center"><img src="img/GTZAN3500.png" height="290"></p>
-The second dataset is the Extended Ballroom (meant to discriminate rhythm/tempo music classes):
+The second dataset is the Extended Ballroom (meant to learn how to discriminate rhythm/tempo music classes):
 <p align="center"><img src="img/Ball3500.png" height="290"></p>
-And the last dataset is the Urban Sounds 8k, composed of natural (non-music) sounds:
+And the last dataset is the Urban Sounds 8k, composed of (non-music) sounds:
 <p align="center"><img src="img/us8k3500.png" height="290"></p>
 
 ## Observations
 
-- *All datasets*: the results we obtain are far from random, since: 1) randomly weighted CNNs are (in some cases) close to match the accuracies obtained by trained CNNs - see the paper; and 2) these are able to outperform MFCCs. 
+- The results we obtain are far from random, since: *1)* randomly weighted CNNs are (in some cases) close to match the accuracies obtained by trained CNNs – see the paper; and *2)* these are able to outperform MFCCs. 
 
-- *Extended Ballroom dataset*: (musical) priors embedded in the structure of the model can facilitate capturing useful (temporal) cues for classifying rhythm/tempo classes – see the accuracy performance of the Temporal architecture (89.82%), which is very close to the state-of-the-art (94.9%).
+- *Extended Ballroom dataset experiments*: (musical) priors embedded in the structure of the model facilitate capturing useful (temporal) cues for classifying rhythm/tempo classes – see the accuracy performance of the (non-trained) Temporal architecture (89.82%), which is very close to the state-of-the-art (93.7%).
 
 - *Waveform front-ends*: sample-level >> frame-level many-shapes > frame-level – as noted in the (trained) literature. 
 
@@ -31,7 +30,7 @@ The public extreme learning machine implementation we use (already included in t
 
 Set `src/config_file.py` and run: `python main.py`
 
-Some documentation is available in `config_file.py`, but here an example of how to set the configuration file:
+Some documentation is available in `config_file.py`, but here some examples in how to set the configuration file:
 
 ```python
 config_main = {
@@ -67,19 +66,59 @@ config_main = {
     }
 }
 ```
-As a result of this config file, the input waveforms of the GTZAN dataset are formatted to be of approx. 29sec (350,000 samples at 12kHz), features are computed in batches of 5, and we use an SVM as classifier.
+As a result of this config file: the input waveforms of the GTZAN dataset are formatted to be of `≈` 29sec (350,000 samples at 12kHz), features are computed in batches of 5, and we use an SVM classifier.
 
 This experiment runs the `sample_level` CNN architecture with 512 filters in every layer, and we use every feature map in every layer to compute the feature vector – see the implementation of the `sample_level` model at `src/dl_models.py`.
 
+```python
+config_main = {
+
+    # Experimental setup
+    'experiment_name': 'v0_or_any_name',
+    'features_type': 'CNN',
+    'model_type': 'ELM',
+    'load_extracted_features': False,
+    'sampling_rate': 12000,
+
+    # Dataset configuration
+    'dataset': 'ExtendedBallroom',
+    'audio_path': '/path_to_audio/jpons/extended_ballroom/',
+    'save_extracted_features_folder': '../data/Extended_Ballroom/features/',
+    'results_folder': '../data/Extended_Ballroom/results/',
+    'train_set_list': None,
+    'val_set_list': None,
+    'test_set_list': None,
+    'audios_list': '/path_to_all_audios/jpons/extended_ballroom/all_files.txt',
+
+    # Spectrogram model: 7x86 CNN
+    'CNN': {
+        'signal': 'spectrogram',
+        'n_mels': 96,
+        'n_frames': 1376,
+
+        'architecture': 'cnn_single',
+        'num_filters': 3585,
+        'selected_features_list': [1],
+        'filter_shape': [7,86],
+        'pool_shape': [1,11],
+
+        'batch_size': 5        
+    }
+}
+```
+As a result of this config file: the input spectrograms of the Extended Ballroom dataset are formatted to be of `≈` 29sec (1376 frames at 12kHz), features are computed in batches of 5, and we use an ELM classifier.
+
+This experiment runs the `7x86` CNN architecture with 3585 filters, and we use every feature map (of this single-layered CNN) to compute the feature vector – see the implementation of the `7x86` model at `src/dl_models.py`.
+
 ## Reproducing our results
 
-To reproduce our results, you just need to download the data and use the same partitions:
+To reproduce our results, one needs to download the data and use the same partitions:
 
-- **GTZAN fault-filtered version**: download the data [(link)](http://marsyasweb.appspot.com/download/data_sets/). Download the (.txt) files listing each which audios are in every partition [(link)](https://github.com/jongpillee/music_dataset_split/tree/master/GTZAN_split). Set the config file: `'train_set_list': 'path/train_audios.txt'`, `'val_set_list': 'path/val_audios.txt'`, `'test_set_list': 'path/test_audios.txt'`, `'audios_list': False`.
+- **GTZAN fault-filtered version**: download the data [(link)](http://marsyasweb.appspot.com/download/data_sets/). Download the (.txt) files that list which audios are in every partition [(link)](https://github.com/jongpillee/music_dataset_split/tree/master/GTZAN_split). Set the config file: `'train_set_list': 'path/train_audios.txt'`, `'val_set_list': 'path/val_audios.txt'`, `'test_set_list': 'path/test_audios.txt'`, `'audios_list': False`.
 
-- **Extended Ballroom**: download the data [(link)](http://anasynth.ircam.fr/home/media/ExtendedBallroom). 10 stratified folds are randomly generated (via a sklearn function) for cross-validation. List all the audios in a file, and set the config file: `'train_set_list': None`, `'val_set_list': None`, `'test_set_list': None`, `'audios_list': 'path/all_audios.txt'`.
+- **Extended Ballroom**: download the data [(link)](http://anasynth.ircam.fr/home/media/ExtendedBallroom). 10 stratified folds will be randomly generated (via a sklearn function) for cross-validation. List all the audios in a file, and set the config file: `'train_set_list': None`, `'val_set_list': None`, `'test_set_list': None`, `'audios_list': 'path/all_audios.txt'`.
 
-- **Urban Sound 8k**: download the data [(link)](https://serv.cusp.nyu.edu/projects/urbansounddataset/urbansound8k.html). Partitions are already available by the authors, and we have some code to get those! Just list all the audios in a file, and set the config file: `'train_set_list': None`, `'val_set_list': None`, `'test_set_list': None`, `'audios_list': 'path/all_audios.txt'`.
+- **Urban Sound 8k**: download the data [(link)](https://serv.cusp.nyu.edu/projects/urbansounddataset/urbansound8k.html). Partitions were already defined by the dataset authors, and we have some code to get those! Just list all the audios in a file, and set the config file: `'train_set_list': None`, `'val_set_list': None`, `'test_set_list': None`, `'audios_list': 'path/all_audios.txt'`.
 
 For more information, see the documentation available in `config_file.py`.
 
