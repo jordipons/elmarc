@@ -36,6 +36,9 @@ MANIFEST
 
 # Environments
 .env
+
+# Other
+.swp
 .venv
 env/
 venv/
