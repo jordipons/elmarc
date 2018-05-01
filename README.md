@@ -64,7 +64,7 @@ config_main = {
     }
 }
 ```
-As a result of this config file: the input waveforms of the GTZAN dataset are formatted to be of `≈` 29sec (350,000 samples at 12kHz), features are computed in batches of 5, and we use an SVM classifier.
+As a result of this config file: the input waveforms of the GTZAN dataset are formatted to be of ≈ 29sec (350,000 samples at 12kHz), features are computed in batches of 5, and we use an SVM classifier.
 
 This experiment runs the `sample_level` CNN architecture with 512 filters in every layer, and we use every feature map in every layer to compute the feature vector – see the implementation of the `sample_level` model at `src/dl_models.py`.
 
@@ -104,7 +104,7 @@ config_main = {
     }
 }
 ```
-As a result of this config file: the input spectrograms of the Extended Ballroom dataset are formatted to be of `≈` 29sec (1376 frames at 12kHz), features are computed in batches of 5, and we use an ELM classifier.
+As a result of this config file: the input spectrograms of the Extended Ballroom dataset are formatted to be of ≈ 29sec (1376 frames at 12kHz), features are computed in batches of 5, and we use an ELM classifier.
 
 This experiment runs the `7x86` CNN architecture with 3585 filters, and we use every feature map (of this single-layered CNN) to compute the feature vector – see the implementation of the `7x86` model at `src/dl_models.py`.
 
