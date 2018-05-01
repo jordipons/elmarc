@@ -1,6 +1,4 @@
 ## Randomly weighted CNNs for (music) audio classification
-The computer vision literature shows that randomly weighted neural networks perform reasonably as feature extractors. Following this idea, we study how non-trained (randomly weighted) convolutional neural networks perform as feature extractors for (music) audio classification tasks. We use features extracted from the embeddings of deep architectures as input to a classifier – with the goal to compare classification accuracies when using different randomly weighted architectures. By following this methodology, we run a fast and comprehensive evaluation of the current deep architectures for audio classification.
-
 This study builds on top of prior works showing that the (classification) performance delivered by random CNN features is correlated with the results of their end-to-end trained counterparts [1]. Put in other words: architectures which perform well with random weights also tend to perform well with trained weights. We use this property to run a fast and comprehensive evaluation of the current deep architectures for (music) audio. Our method works as follows: first, we extract a feature vector from the embeddings of a randomly weighted CNN; and then, we input these features to a classifier – which can be a support vector machine (SVM) or an extreme learning machine (ELM). Our goal is to compare the obtained classification accuracies when using different CNN architectures. 
 
 We consider three datasets in our study. The first one, is the fault-filtered GTZAN dataset for music genre classification – classification accuracy is the figure-of-merit expressed in the vertical axis of the following figures:
@@ -15,7 +13,7 @@ And the last dataset is the Urban Sounds 8k, composed of (non-music) sounds:
 
 - The results we obtain are far from random, since: *1)* randomly weighted CNNs are (in some cases) close to match the accuracies obtained by trained CNNs – see the paper; and *2)* these are able to outperform MFCCs. 
 
-- *Extended Ballroom dataset experiments*: (musical) priors embedded in the structure of the model facilitate capturing useful (temporal) cues for classifying rhythm/tempo classes – see the accuracy performance of the (non-trained) Temporal architecture (89.82%), which is very close to the state-of-the-art (93.7%).
+- *Extended Ballroom dataset experiments*: (musical) priors embedded in the structure of the model facilitate capturing useful (temporal) cues for classifying rhythm/tempo classes – see the accuracy performance of the (non-trained) Temporal architecture (89.82%), which is very close to a state-of-the-art trained CNN (93.7%).
 
 - *Waveform front-ends*: sample-level >> frame-level many-shapes > frame-level – as noted in the (trained) literature. 
 

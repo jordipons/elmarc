@@ -40,7 +40,7 @@ DOCUMENTATION
 'experiment_name': personal string to easily identify an experiment.
  -- EXAMPLE: 'v0_final3_true'
 'dataset': dataset identifier.
- -- VALUES: 'UrbanSound8K'
+ -- VALUES: 'UrbanSound8K', 'ExtendedBallroom', 'Ballroom', 'GTZAN'.
 
 
 'audio_path': directory where audios are stored.
